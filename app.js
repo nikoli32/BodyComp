@@ -10,16 +10,17 @@ const totalGroups = document.querySelector("#totalGroups");
 const frontView = document.querySelector("#frontView");
 const backView = document.querySelector("#backView");
 
-const design = { width: 520, height: 740 };
+const design = { width: 520, height: 770 };
 const basePalette = {
   body: "#2b3445",
   bodyStroke: "#111722",
-  muscle: "#b76072",
-  muscleDeep: "#68485d",
+  muscle: "#2f7fca",
+  muscleDeep: "#235c98",
+  muscleLight: "#45a4ed",
   inactive: "#3b4051",
   line: "rgba(10, 14, 21, 0.68)",
-  hover: "#f23868",
-  hoverStroke: "#ffc0cf",
+  hover: "#55b7ff",
+  hoverStroke: "#ccecff",
 };
 
 const muscles = [
@@ -43,9 +44,9 @@ const regionBuilders = {
     ["L", 136, 281], ["L", 113, 365], ["L", 94, 398],
     ["L", 118, 412], ["L", 148, 382], ["L", 166, 308],
     ["L", 184, 254], ["L", 200, 327], ["L", 209, 410],
-    ["L", 188, 496], ["L", 174, 616], ["L", 154, 714],
-    ["L", 199, 718], ["L", 225, 562], ["L", 259, 458],
-    ["L", 293, 562], ["L", 319, 718], ["L", 364, 714],
+    ["L", 188, 496], ["L", 174, 616], ["L", 159, 719],
+    ["L", 199, 724], ["L", 225, 562], ["L", 259, 458],
+    ["L", 293, 562], ["L", 319, 724], ["L", 361, 719],
     ["L", 346, 616], ["L", 332, 496], ["L", 309, 410],
     ["L", 318, 327], ["L", 336, 254], ["L", 358, 308],
     ["L", 372, 382], ["L", 402, 412], ["L", 421, 396],
@@ -55,6 +56,10 @@ const regionBuilders = {
   ]),
   head: () => path([["M", 260, 45], ["C", 229, 45, 212, 69, 216, 99], ["C", 220, 130, 238, 150, 260, 150], ["C", 282, 150, 300, 130, 304, 99], ["C", 308, 69, 291, 45, 260, 45], ["Z"]]),
   neck: () => path([["M", 235, 148], ["L", 285, 148], ["L", 298, 184], ["L", 260, 209], ["L", 222, 184], ["Z"]]),
+  leftHand: () => path([["M", 99, 473], ["C", 81, 486, 74, 506, 83, 520], ["L", 114, 507], ["C", 118, 493, 113, 480, 99, 473], ["Z"]]),
+  rightHand: () => mirror(regionBuilders.leftHand()),
+  leftFoot: () => path([["M", 160, 718], ["C", 143, 728, 133, 741, 134, 754], ["L", 199, 754], ["C", 204, 740, 195, 726, 181, 721], ["Z"]]),
+  rightFoot: () => mirror(regionBuilders.leftFoot()),
   leftDeltoid: () => path([["M", 188, 188], ["C", 150, 197, 130, 221, 124, 259], ["C", 153, 272, 180, 264, 198, 239], ["C", 208, 218, 205, 199, 188, 188], ["Z"]]),
   rightDeltoid: () => mirror(regionBuilders.leftDeltoid()),
   leftPec: () => path([["M", 226, 203], ["C", 188, 204, 164, 224, 160, 258], ["C", 174, 285, 204, 296, 250, 286], ["L", 252, 218], ["C", 246, 209, 238, 204, 226, 203], ["Z"]]),
@@ -79,9 +84,9 @@ const regionBuilders = {
   rightQuadOuter: () => mirror(regionBuilders.leftQuadOuter()),
   leftQuadInner: () => path([["M", 224, 506], ["C", 224, 556, 211, 614, 184, 660], ["L", 230, 660], ["C", 252, 614, 258, 552, 250, 486], ["Z"]]),
   rightQuadInner: () => mirror(regionBuilders.leftQuadInner()),
-  leftShin: () => path([["M", 194, 646], ["L", 224, 646], ["L", 215, 718], ["C", 201, 724, 188, 716, 181, 700], ["Z"]]),
+  leftShin: () => path([["M", 194, 646], ["L", 224, 646], ["L", 216, 722], ["C", 202, 727, 188, 718, 181, 700], ["Z"]]),
   rightShin: () => mirror(regionBuilders.leftShin()),
-  leftCalf: () => path([["M", 172, 632], ["C", 151, 666, 151, 703, 166, 724], ["C", 188, 718, 199, 682, 194, 646], ["C", 189, 635, 181, 631, 172, 632], ["Z"]]),
+  leftCalf: () => path([["M", 172, 632], ["C", 151, 666, 151, 706, 166, 728], ["C", 188, 722, 199, 682, 194, 646], ["C", 189, 635, 181, 631, 172, 632], ["Z"]]),
   rightCalf: () => mirror(regionBuilders.leftCalf()),
 };
 
@@ -214,6 +219,10 @@ function drawBodyBase() {
   fillPath(regionBuilders.silhouette(), basePalette.body, basePalette.bodyStroke, 2.4);
   fillPath(regionBuilders.head(), "#34394a", "#151a24", 2);
   fillPath(regionBuilders.neck(), "#394052", "#151a24", 1.6);
+  fillPath(regionBuilders.leftHand(), "#34394a", "#151a24", 1.6);
+  fillPath(regionBuilders.rightHand(), "#34394a", "#151a24", 1.6);
+  fillPath(regionBuilders.leftFoot(), "#34394a", "#151a24", 1.6);
+  fillPath(regionBuilders.rightFoot(), "#34394a", "#151a24", 1.6);
 }
 
 function drawMuscleRegions() {
@@ -256,7 +265,7 @@ function drawFiber(itemPath, active) {
   ctx.save();
   ctx.clip(itemPath.path);
   ctx.globalAlpha = active ? 0.26 : 0.18;
-  ctx.strokeStyle = "#ffd7df";
+  ctx.strokeStyle = active ? "#e5f6ff" : "#b9ddff";
   ctx.lineWidth = 1;
 
   for (let y = bounds.minY + 10; y < bounds.maxY; y += 18) {
@@ -378,7 +387,7 @@ function muscleFill(regionId) {
     return basePalette.muscleDeep;
   }
   if (regionId.includes("Shin") || regionId.includes("Forearm") || regionId.includes("Calf")) {
-    return "#53596a";
+    return basePalette.muscleLight;
   }
   return basePalette.muscle;
 }
