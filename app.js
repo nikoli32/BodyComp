@@ -36,7 +36,7 @@ const muscles = [
   muscle("Trapezius", "Upper-back muscle used in shrugs, carries, rows, and deadlifts.", ["leftTrap", "rightTrap"]),
   muscle("Rear Deltoids", "Back shoulder muscles trained with reverse flyes, rows, and pulling work.", ["leftRearDelt", "rightRearDelt"]),
   muscle("Triceps", "Back upper-arm muscles used in presses, dips, and extensions.", ["leftTricep", "rightTricep"]),
-  muscle("Upper Back", "Mid-back muscles that support posture and shoulder-blade control during rows.", ["leftUpperBack", "rightUpperBack"]),
+  muscle("Rhomboids", "Muscles between the shoulder blades that retract and stabilize the scapulae during rows and pulling.", ["leftUpperBack", "rightUpperBack"]),
   muscle("Lats", "Large back muscles that drive pull-ups, pulldowns, and rows.", ["leftLat", "rightLat"]),
   muscle("Lower Back", "Spinal support muscles heavily involved in hinges, squats, and deadlifts.", ["leftLowerBack", "rightLowerBack"]),
   muscle("Glutes", "Hip-extensor muscles trained in squats, hinges, lunges, and thrusts.", ["leftGlute", "rightGlute"]),
@@ -44,7 +44,7 @@ const muscles = [
   muscle("Calves", "Lower-leg muscles trained with calf raises and loaded carries.", ["leftCalf", "rightCalf"]),
 ];
 
-const backMuscleNames = new Set(["Trapezius", "Rear Deltoids", "Triceps", "Upper Back", "Lats", "Lower Back", "Glutes", "Hamstrings", "Calves"]);
+const backMuscleNames = new Set(["Trapezius", "Rear Deltoids", "Triceps", "Rhomboids", "Lats", "Lower Back", "Glutes", "Hamstrings", "Calves"]);
 
 const regionBuilders = {
   silhouette: () => path([
@@ -97,25 +97,25 @@ const regionBuilders = {
   rightQuadInner: () => mirror(regionBuilders.leftQuadInner()),
   leftShin: () => path([["M", 194, 646], ["L", 224, 646], ["L", 216, 722], ["C", 202, 727, 188, 718, 181, 700], ["Z"]]),
   rightShin: () => mirror(regionBuilders.leftShin()),
-  leftCalf: () => path([["M", 172, 632], ["C", 151, 666, 151, 706, 166, 728], ["C", 188, 722, 199, 682, 194, 646], ["C", 189, 635, 181, 631, 172, 632], ["Z"]]),
+  leftCalf: () => path([["M", 207, 592], ["C", 191, 599, 180, 620, 178, 645], ["C", 177, 664, 184, 681, 188, 704], ["C", 197, 709, 206, 701, 209, 687], ["C", 214, 660, 215, 621, 207, 592], ["Z"]]),
    rightCalf: () => mirror(regionBuilders.leftCalf()),
-   // Rear anatomy is deliberately drawn as broad, familiar training areas rather
-   // than as every individual anatomical subdivision.
-   // Rear map follows the familiar training-anatomy layout: central traps,
-   // shoulder caps, a V of lats, then the posterior chain.
-   leftTrap: () => path([["M", 260, 181], ["L", 229, 190], ["L", 201, 225], ["L", 218, 259], ["L", 254, 286], ["L", 260, 236], ["Z"]]),
+   // Rear anatomy is arranged around its surface landmarks: the trapezius
+   // fans from the neck to the shoulders, rhomboids sit between the scapulae,
+   // lats sweep from the upper arm toward the waist, and the erectors flank
+   // the lower spine. Each region remains a practical, clickable training area.
+   leftTrap: () => path([["M", 260, 160], ["L", 232, 174], ["C", 216, 181, 200, 193, 188, 211], ["L", 204, 247], ["C", 220, 264, 240, 276, 255, 286], ["L", 260, 225], ["Z"]]),
    rightTrap: () => mirror(regionBuilders.leftTrap()),
-   leftRearDelt: () => path([["M", 204, 194], ["C", 169, 195, 145, 218, 141, 250], ["C", 143, 273, 163, 283, 186, 271], ["C", 202, 262, 211, 238, 204, 194], ["Z"]]),
+   leftRearDelt: () => path([["M", 204, 193], ["C", 173, 194, 149, 213, 140, 243], ["C", 137, 260, 148, 276, 166, 279], ["C", 186, 277, 202, 262, 207, 241], ["C", 212, 220, 210, 203, 204, 193], ["Z"]]),
    rightRearDelt: () => mirror(regionBuilders.leftRearDelt()),
-   leftUpperBack: () => path([["M", 218, 266], ["L", 254, 290], ["L", 253, 337], ["L", 219, 350], ["L", 203, 307], ["Z"]]),
+   leftUpperBack: () => path([["M", 207, 252], ["C", 222, 253, 241, 264, 255, 281], ["L", 254, 323], ["C", 240, 331, 221, 326, 208, 314], ["L", 198, 279], ["Z"]]),
    rightUpperBack: () => mirror(regionBuilders.leftUpperBack()),
-   leftLat: () => path([["M", 202, 284], ["L", 217, 350], ["L", 232, 466], ["L", 222, 488], ["C", 202, 449, 190, 361, 202, 284], ["Z"]]),
+   leftLat: () => path([["M", 204, 263], ["C", 195, 278, 193, 294, 197, 311], ["C", 202, 330, 204, 351, 211, 370], ["C", 214, 382, 220, 389, 226, 386], ["C", 234, 377, 234, 357, 236, 338], ["C", 237, 307, 226, 277, 204, 263], ["Z"]]),
    rightLat: () => mirror(regionBuilders.leftLat()),
-   leftLowerBack: () => path([["M", 256, 343], ["L", 238, 361], ["L", 231, 458], ["L", 251, 493], ["L", 258, 465], ["Z"]]),
+   leftLowerBack: () => path([["M", 254, 322], ["C", 246, 339, 237, 361, 235, 385], ["L", 235, 414], ["L", 252, 431], ["L", 258, 414], ["L", 258, 330], ["Z"]]),
    rightLowerBack: () => mirror(regionBuilders.leftLowerBack()),
-   leftGlute: () => path([["M", 204, 501], ["C", 218, 480, 247, 486, 258, 516], ["L", 258, 552], ["C", 249, 574, 221, 579, 203, 561], ["C", 193, 543, 195, 517, 204, 501], ["Z"]]),
+   leftGlute: () => path([["M", 258, 420], ["C", 240, 414, 217, 420, 205, 434], ["C", 197, 447, 198, 466, 207, 479], ["C", 220, 491, 242, 492, 258, 481], ["Z"]]),
    rightGlute: () => mirror(regionBuilders.leftGlute()),
-   leftHamstring: () => path([["M", 202, 575], ["L", 249, 566], ["C", 253, 610, 241, 654, 220, 682], ["L", 184, 665], ["C", 187, 627, 191, 592, 202, 575], ["Z"]]),
+   leftHamstring: () => path([["M", 221, 470], ["C", 205, 474, 196, 496, 196, 525], ["C", 195, 551, 190, 572, 195, 583], ["C", 202, 592, 212, 590, 218, 581], ["C", 225, 562, 234, 536, 241, 512], ["C", 245, 492, 239, 478, 221, 470], ["Z"]]),
    rightHamstring: () => mirror(regionBuilders.leftHamstring()),
 };
 
