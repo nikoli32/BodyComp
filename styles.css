@@ -103,23 +103,87 @@ h2 {
   background: #0f131a;
 }
 
-.view-toggle button {
+.view-toggle a {
+  display: grid;
+  place-items: center;
   min-height: 38px;
   border: 0;
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
   font-weight: 850;
+  text-decoration: none;
 }
 
-.view-toggle button.active {
+.view-toggle a.active {
   background: var(--surface-3);
   color: var(--text);
 }
 
-.view-toggle button:disabled {
-  cursor: not-allowed;
-  opacity: 0.42;
+.home-page {
+  display: grid;
+  place-content: center;
+  gap: 24px;
+  width: min(760px, 100%);
+  min-height: calc(100vh - 138px);
+  margin: 0 auto;
+}
+
+.welcome-section {
+  text-align: center;
+}
+
+.welcome-section h2 {
+  font-size: clamp(1.6rem, 4vw, 2.5rem);
+}
+
+.welcome-section p {
+  margin-top: 10px;
+  color: var(--muted);
+}
+
+.view-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.view-button {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 30px 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.view-button:hover,
+.view-button:focus-visible {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.button-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.6rem;
+}
+
+.button-text {
+  font-size: 1.1rem;
+  font-weight: 850;
 }
 
 .workspace {
@@ -318,5 +382,9 @@ h2 {
 
   .model-panel {
     min-height: auto;
+  }
+
+  .view-buttons {
+    grid-template-columns: 1fr;
   }
 }

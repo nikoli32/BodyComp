@@ -7,8 +7,6 @@ const muscleDescription = document.querySelector("#muscleDescription");
 const muscleList = document.querySelector("#muscleList");
 const visibleSide = document.querySelector("#visibleSide");
 const totalGroups = document.querySelector("#totalGroups");
-const frontView = document.querySelector("#frontView");
-const backView = document.querySelector("#backView");
 
 const design = { width: 520, height: 770 };
 const basePalette = {
@@ -19,11 +17,12 @@ const basePalette = {
   muscleLight: "#45a4ed",
   inactive: "#3b4051",
   line: "rgba(10, 14, 21, 0.68)",
-  hover: "#55b7ff",
+  hover: "rgb(38, 148, 227)",
   hoverStroke: "#ccecff",
 };
 
 const muscles = [
+  // Front view muscles
   muscle("Deltoids", "Shoulder abduction and pressing control.", ["leftDeltoid", "rightDeltoid"]),
   muscle("Pectorals", "Primary chest muscles for pressing and shoulder flexion.", ["leftPec", "rightPec"]),
   muscle("Biceps", "Front upper-arm flexors used in curls, rows, and pulling work.", ["leftBiceps", "rightBiceps"]),
@@ -33,9 +32,19 @@ const muscles = [
   muscle("Hip Flexors", "Anterior hip muscles involved in knee drive and leg raises.", ["leftHipFlexor", "rightHipFlexor"]),
   muscle("Adductors", "Inner thigh muscles that draw the legs inward and support squats.", ["leftAdductor", "rightAdductor"]),
   muscle("Quadriceps", "Front thigh muscles used for knee extension, squats, lunges, and jumping.", ["leftQuadOuter", "leftQuadInner", "rightQuadOuter", "rightQuadInner"]),
-  muscle("Tibialis Anterior", "Front shin muscles that lift the foot and support deceleration.", ["leftShin", "rightShin"]),
-  muscle("Calves", "Lower-leg muscles for ankle extension, running, jumping, and lower-leg stability.", ["leftCalf", "rightCalf"]),
+  // Back view: the major groups lifters commonly train and track.
+  muscle("Trapezius", "Upper-back muscle used in shrugs, carries, rows, and deadlifts.", ["leftTrap", "rightTrap"]),
+  muscle("Rear Deltoids", "Back shoulder muscles trained with reverse flyes, rows, and pulling work.", ["leftRearDelt", "rightRearDelt"]),
+  muscle("Triceps", "Back upper-arm muscles used in presses, dips, and extensions.", ["leftTricep", "rightTricep"]),
+  muscle("Upper Back", "Mid-back muscles that support posture and shoulder-blade control during rows.", ["leftUpperBack", "rightUpperBack"]),
+  muscle("Lats", "Large back muscles that drive pull-ups, pulldowns, and rows.", ["leftLat", "rightLat"]),
+  muscle("Lower Back", "Spinal support muscles heavily involved in hinges, squats, and deadlifts.", ["leftLowerBack", "rightLowerBack"]),
+  muscle("Glutes", "Hip-extensor muscles trained in squats, hinges, lunges, and thrusts.", ["leftGlute", "rightGlute"]),
+  muscle("Hamstrings", "Back thigh muscles trained in hinges, curls, and deadlifts.", ["leftHamstring", "rightHamstring"]),
+  muscle("Calves", "Lower-leg muscles trained with calf raises and loaded carries.", ["leftCalf", "rightCalf"]),
 ];
+
+const backMuscleNames = new Set(["Trapezius", "Rear Deltoids", "Triceps", "Upper Back", "Lats", "Lower Back", "Glutes", "Hamstrings", "Calves"]);
 
 const regionBuilders = {
   silhouette: () => path([
@@ -64,8 +73,10 @@ const regionBuilders = {
   rightDeltoid: () => mirror(regionBuilders.leftDeltoid()),
   leftPec: () => path([["M", 226, 203], ["C", 188, 204, 164, 224, 160, 258], ["C", 174, 285, 204, 296, 250, 286], ["L", 252, 218], ["C", 246, 209, 238, 204, 226, 203], ["Z"]]),
   rightPec: () => mirror(regionBuilders.leftPec()),
-  leftBiceps: () => path([["M", 143, 265], ["C", 122, 287, 118, 329, 130, 361], ["C", 152, 353, 165, 319, 163, 285], ["C", 159, 272, 153, 266, 143, 265], ["Z"]]),
+  leftBiceps: () => path([["M", 143, 265], ["C", 120, 285, 115, 320, 125, 355], ["C", 145, 345, 155, 310, 155, 285], ["C", 150, 275, 145, 270, 143, 265], ["Z"]]),
   rightBiceps: () => mirror(regionBuilders.leftBiceps()),
+  leftTricep: () => path([["M", 143, 265], ["C", 125, 285, 120, 320, 130, 355], ["C", 150, 345, 160, 310, 160, 285], ["C", 155, 275, 150, 270, 143, 265], ["Z"]]),
+  rightTricep: () => mirror(regionBuilders.leftTricep()),
   leftForearm: () => path([["M", 126, 354], ["C", 106, 386, 96, 437, 102, 481], ["C", 129, 462, 145, 414, 146, 372], ["C", 141, 361, 134, 355, 126, 354], ["Z"]]),
   rightForearm: () => mirror(regionBuilders.leftForearm()),
   leftUpperAbs: () => path([["M", 232, 300], ["L", 258, 300], ["L", 258, 342], ["C", 249, 348, 239, 346, 234, 338], ["Z"]]),
@@ -87,7 +98,25 @@ const regionBuilders = {
   leftShin: () => path([["M", 194, 646], ["L", 224, 646], ["L", 216, 722], ["C", 202, 727, 188, 718, 181, 700], ["Z"]]),
   rightShin: () => mirror(regionBuilders.leftShin()),
   leftCalf: () => path([["M", 172, 632], ["C", 151, 666, 151, 706, 166, 728], ["C", 188, 722, 199, 682, 194, 646], ["C", 189, 635, 181, 631, 172, 632], ["Z"]]),
-  rightCalf: () => mirror(regionBuilders.leftCalf()),
+   rightCalf: () => mirror(regionBuilders.leftCalf()),
+   // Rear anatomy is deliberately drawn as broad, familiar training areas rather
+   // than as every individual anatomical subdivision.
+   // Rear map follows the familiar training-anatomy layout: central traps,
+   // shoulder caps, a V of lats, then the posterior chain.
+   leftTrap: () => path([["M", 260, 181], ["L", 229, 190], ["L", 201, 225], ["L", 218, 259], ["L", 254, 286], ["L", 260, 236], ["Z"]]),
+   rightTrap: () => mirror(regionBuilders.leftTrap()),
+   leftRearDelt: () => path([["M", 204, 194], ["C", 169, 195, 145, 218, 141, 250], ["C", 143, 273, 163, 283, 186, 271], ["C", 202, 262, 211, 238, 204, 194], ["Z"]]),
+   rightRearDelt: () => mirror(regionBuilders.leftRearDelt()),
+   leftUpperBack: () => path([["M", 218, 266], ["L", 254, 290], ["L", 253, 337], ["L", 219, 350], ["L", 203, 307], ["Z"]]),
+   rightUpperBack: () => mirror(regionBuilders.leftUpperBack()),
+   leftLat: () => path([["M", 202, 284], ["L", 217, 350], ["L", 232, 466], ["L", 222, 488], ["C", 202, 449, 190, 361, 202, 284], ["Z"]]),
+   rightLat: () => mirror(regionBuilders.leftLat()),
+   leftLowerBack: () => path([["M", 256, 343], ["L", 238, 361], ["L", 231, 458], ["L", 251, 493], ["L", 258, 465], ["Z"]]),
+   rightLowerBack: () => mirror(regionBuilders.leftLowerBack()),
+   leftGlute: () => path([["M", 204, 501], ["C", 218, 480, 247, 486, 258, 516], ["L", 258, 552], ["C", 249, 574, 221, 579, 203, 561], ["C", 193, 543, 195, 517, 204, 501], ["Z"]]),
+   rightGlute: () => mirror(regionBuilders.leftGlute()),
+   leftHamstring: () => path([["M", 202, 575], ["L", 249, 566], ["C", 253, 610, 241, 654, 220, 682], ["L", 184, 665], ["C", 187, 627, 191, 592, 202, 575], ["Z"]]),
+   rightHamstring: () => mirror(regionBuilders.leftHamstring()),
 };
 
 const state = {
@@ -100,6 +129,7 @@ const state = {
   offsetY: 0,
   targetOffsetX: 0,
   targetOffsetY: 0,
+  view: document.body.dataset.view || "front",
 };
 
 let scene = null;
@@ -110,7 +140,7 @@ init();
 
 function init() {
   totalGroups.textContent = muscles.length;
-  visibleSide.textContent = "Front view";
+  visibleSide.textContent = `${state.view[0].toUpperCase()}${state.view.slice(1)} view`;
   renderMuscleList();
   bindEvents();
   resizeCanvas();
@@ -126,12 +156,16 @@ function muscle(name, description, regions) {
   };
 }
 
+function getVisibleMuscles() {
+  return muscles.filter((item) => (
+    state.view === "back" ? backMuscleNames.has(item.name) : !backMuscleNames.has(item.name)
+  ));
+}
+
 function bindEvents() {
   window.addEventListener("resize", resizeCanvas);
   resetView.addEventListener("click", resetSelection);
-  frontView.addEventListener("click", resetSelection);
-  backView.addEventListener("click", () => {});
-
+  
   canvas.addEventListener("pointermove", (event) => {
     updatePointer(event);
     updateHover();
@@ -151,7 +185,10 @@ function bindEvents() {
 function renderMuscleList() {
   muscleList.innerHTML = "";
 
-  muscles.forEach((item) => {
+  // Only show muscles relevant to the current view
+  const visibleMuscles = getVisibleMuscles();
+
+  visibleMuscles.forEach((item) => {
     const button = document.createElement("button");
     button.className = "muscle-chip";
     button.type = "button";
@@ -208,7 +245,10 @@ function getScene(width, height) {
 }
 
 function buildRenderRegions() {
-  return muscles.flatMap((item) => item.regions.map((regionId) => ({
+  // Filter muscles based on current view
+  const visibleMuscles = getVisibleMuscles();
+  
+  return visibleMuscles.flatMap((item) => item.regions.map((regionId) => ({
     muscle: item,
     id: regionId,
     path: regionBuilders[regionId](),
