@@ -13,6 +13,7 @@
           <p class="eyebrow">Body Comp</p>
           <h1>Muscle Recovery Map</h1>
         </div>
+        <a href="auth.html" class="text-button">Sign in</a>
       </header>
 
       <section class="home-page">
@@ -30,6 +31,10 @@
             <span class="button-icon" aria-hidden="true">&#8595;</span>
             <span class="button-text">Back View</span>
           </a>
+          <a href="workout.html" class="view-button">
+            <span class="button-icon" aria-hidden="true">+</span>
+            <span class="button-text">Log Workout</span>
+          </a>
         </div>
 
         <section class="panel recovery-summary">
@@ -37,15 +42,18 @@
           <div class="stat-grid">
             <article>
               <span>Last workout</span>
-              <strong>3d</strong>
+              <strong id="lastWorkout">—</strong>
             </article>
             <article>
               <span>Fresh groups</span>
-              <strong id="totalGroups">0</strong>
+              <strong id="totalGroups">&mdash;</strong>
             </article>
           </div>
         </section>
+        <p id="apiStatus" class="api-status" role="status">Loading recovery data…</p>
       </section>
     </main>
+    <script src="api.js"></script>
+    <script src="dashboard.js"></script>
   </body>
 </html>

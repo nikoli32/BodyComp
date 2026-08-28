@@ -8,6 +8,7 @@
     "start": "node dist/server.js",
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit",
+    "test": "npm run build && node --test test/recovery.test.mjs test/validation.test.mjs",
     "migrate": "tsx src/migrate.ts"
   },
   "dependencies": {

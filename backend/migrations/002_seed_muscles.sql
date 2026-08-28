@@ -16,7 +16,7 @@ insert into muscle_groups (slug, name, description, map_view) values
   ('lower-back', 'Lower Back', 'Spinal support muscles.', 'back'),
   ('glutes', 'Glutes', 'Hip extensor muscles.', 'back'),
   ('hamstrings', 'Hamstrings', 'Back thigh muscles.', 'back'),
-  ('calves', 'Calves', 'Lower-leg muscles.', 'both')
+  ('calves', 'Calves', 'Lower-leg muscles.', 'back')
 on conflict (slug) do nothing;
 
 insert into muscle_regions (muscle_group_id, region_key, side, map_view)

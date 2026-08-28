@@ -17,7 +17,6 @@
           <a class="active" href="front_view.html" aria-current="page">Front</a>
           <a href="back_view.html">Back</a>
         </nav>
-        </div>
       </header>
 
       <section class="workspace">
@@ -27,18 +26,18 @@
             <div class="stat-grid">
               <article>
                 <span>Last workout</span>
-                <strong>3d</strong>
+                <strong id="lastWorkout">—</strong>
               </article>
               <article>
                 <span>Fresh groups</span>
-                <strong id="totalGroups">0</strong>
+                <strong id="totalGroups">&mdash;</strong>
               </article>
             </div>
           </section>
 
           <section class="panel">
             <h2>Muscle Groups</h2>
-            <div id="muscleList" class="muscle-list"></div>
+            <div id="muscleList" class="muscle-list" aria-label="Muscle groups"></div>
           </section>
         </aside>
 
@@ -54,12 +53,13 @@
           </div>
 
           <div class="canvas-wrap">
-            <canvas id="muscleCanvas" aria-label="Clickable front-facing human muscle map"></canvas>
+            <canvas id="muscleCanvas" tabindex="0" aria-label="Interactive front-facing human muscle map" aria-describedby="mapInstructions"></canvas>
+            <p id="mapInstructions" class="visually-hidden">Use the muscle group buttons to select a muscle. On the map, use arrow keys to move through muscle groups and Enter or Space to select one.</p>
           </div>
         </section>
 
         <aside class="details-panel" aria-label="Selected muscle details">
-          <section class="panel selected-card">
+          <section class="panel selected-card" aria-live="polite">
             <p class="eyebrow">Selected Muscle</p>
             <h2 id="detailTitle">Full Body</h2>
             <p id="muscleDescription">
@@ -88,6 +88,8 @@
       </section>
     </main>
 
+    <script src="ui-utils.js"></script>
+    <script src="api.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

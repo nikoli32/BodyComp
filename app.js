@@ -7,6 +7,8 @@ const muscleDescription = document.querySelector("#muscleDescription");
 const muscleList = document.querySelector("#muscleList");
 const visibleSide = document.querySelector("#visibleSide");
 const totalGroups = document.querySelector("#totalGroups");
+const lastWorkout = document.querySelector("#lastWorkout");
+const { nextMuscleIndex, recoveryLabel } = window.MuscleMapUtils;
 
 const design = { width: 520, height: 770 };
 const basePalette = {
@@ -19,6 +21,9 @@ const basePalette = {
   line: "rgba(10, 14, 21, 0.68)",
   hover: "rgb(38, 148, 227)",
   hoverStroke: "#ccecff",
+  needsRecovery: "#d95f68",
+  needsRecoveryDeep: "#9f3e49",
+  needsRecoveryLight: "#ef858b",
 };
 
 const muscles = [
@@ -130,6 +135,7 @@ const state = {
   targetOffsetX: 0,
   targetOffsetY: 0,
   view: document.body.dataset.view || "front",
+  recovery: new Map(),
 };
 
 let scene = null;
@@ -138,13 +144,14 @@ let animationFrame = null;
 
 init();
 
-function init() {
-  totalGroups.textContent = muscles.length;
+async function init() {
+  totalGroups.textContent = "…";
   visibleSide.textContent = `${state.view[0].toUpperCase()}${state.view.slice(1)} view`;
   renderMuscleList();
   bindEvents();
   resizeCanvas();
-  animate();
+  requestRender();
+  await loadRecovery();
 }
 
 function muscle(name, description, regions) {
@@ -169,15 +176,35 @@ function bindEvents() {
   canvas.addEventListener("pointermove", (event) => {
     updatePointer(event);
     updateHover();
+    requestRender();
   });
 
   canvas.addEventListener("pointerleave", () => {
     state.hovered = null;
+    requestRender();
   });
 
   canvas.addEventListener("click", () => {
     if (state.hovered) {
       selectMuscle(state.hovered);
+    }
+  });
+
+  canvas.addEventListener("keydown", (event) => {
+    const visibleMuscles = getVisibleMuscles();
+    const currentIndex = visibleMuscles.findIndex((item) => item.id === state.selected?.id);
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = nextMuscleIndex(currentIndex, "next", visibleMuscles.length);
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = nextMuscleIndex(currentIndex, "previous", visibleMuscles.length);
+    if (event.key === "Home") nextIndex = nextMuscleIndex(currentIndex, "first", visibleMuscles.length);
+    if (event.key === "End") nextIndex = nextMuscleIndex(currentIndex, "last", visibleMuscles.length);
+    if (["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(event.key)) {
+      event.preventDefault();
+      selectMuscle(visibleMuscles[nextIndex]);
+    }
+    if ((event.key === "Enter" || event.key === " ") && state.selected) {
+      event.preventDefault();
+      selectMuscle(state.selected);
     }
   });
 }
@@ -193,9 +220,40 @@ function renderMuscleList() {
     button.className = "muscle-chip";
     button.type = "button";
     button.textContent = item.name;
+    const recovery = state.recovery.get(item.id);
+    const statusLabel = recoveryLabel(recovery?.status);
+    button.setAttribute("aria-label", `${item.name}: ${statusLabel}`);
+    button.setAttribute("aria-pressed", String(state.selected?.id === item.id));
+    button.title = `${item.name}: ${statusLabel}`;
+    if (recovery) {
+      button.classList.add(`status-${recovery.status}`);
+    }
     button.addEventListener("click", () => selectMuscle(item));
     muscleList.append(button);
   });
+}
+
+async function loadRecovery() {
+  try {
+    const recovery = await window.MuscleRecoveryApi.getRecovery();
+    state.recovery = new Map(recovery.map((item) => [item.slug, item]));
+    totalGroups.textContent = recovery.filter((item) => item.status === "ready").length;
+    lastWorkout.textContent = timeSinceMostRecentWorkout(recovery);
+    renderMuscleList();
+    requestRender();
+  } catch (error) {
+    totalGroups.textContent = "—";
+    lastWorkout.textContent = "—";
+    console.error("Unable to load muscle recovery data.", error);
+  }
+}
+
+function timeSinceMostRecentWorkout(recovery) {
+  const dates = recovery.map((item) => item.lastTrainedAt).filter(Boolean);
+  if (!dates.length) return "None yet";
+  const latest = dates.reduce((current, date) => new Date(date) > new Date(current) ? date : current);
+  const hours = Math.max(0, Math.round((Date.now() - new Date(latest).getTime()) / 36e5));
+  return hours < 24 ? `${hours}h` : `${Math.round(hours / 24)}d`;
 }
 
 function resizeCanvas() {
@@ -206,6 +264,11 @@ function resizeCanvas() {
   canvas.style.width = `${rect.width}px`;
   canvas.style.height = `${rect.height}px`;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  requestRender();
+}
+
+function requestRender() {
+  if (animationFrame === null) animationFrame = requestAnimationFrame(animate);
 }
 
 function animate() {
@@ -213,7 +276,18 @@ function animate() {
   state.offsetX += (state.targetOffsetX - state.offsetX) * 0.12;
   state.offsetY += (state.targetOffsetY - state.offsetY) * 0.12;
   draw();
-  animationFrame = requestAnimationFrame(animate);
+  const stillMoving = Math.abs(state.targetZoom - state.zoom) > 0.001
+    || Math.abs(state.targetOffsetX - state.offsetX) > 0.1
+    || Math.abs(state.targetOffsetY - state.offsetY) > 0.1;
+  if (stillMoving) {
+    animationFrame = requestAnimationFrame(animate);
+  } else {
+    state.zoom = state.targetZoom;
+    state.offsetX = state.targetOffsetX;
+    state.offsetY = state.targetOffsetY;
+    draw();
+    animationFrame = null;
+  }
 }
 
 function draw() {
@@ -348,16 +422,21 @@ function selectMuscle(item) {
   state.selected = item;
   muscleName.textContent = item.name;
   detailTitle.textContent = item.name;
-  muscleDescription.textContent = item.description;
+  const recovery = state.recovery.get(item.id);
+  muscleDescription.textContent = recovery
+    ? `${recovery.status === "ready" ? "Ready to train." : `Recovering until ${new Date(recovery.recoveredAt).toLocaleString()}.`} ${item.description}`
+    : item.description;
 
   document.querySelectorAll(".muscle-chip").forEach((chip) => {
     chip.classList.toggle("active", chip.textContent === item.name);
+    chip.setAttribute("aria-pressed", String(chip.textContent === item.name));
   });
 
   const bounds = muscleBounds(item);
   state.targetZoom = 1.42;
   state.targetOffsetX = canvas.clientWidth / 2 - (scene.x + ((bounds.minX + bounds.maxX) / 2) * scene.scale);
   state.targetOffsetY = canvas.clientHeight / 2 - (scene.y + ((bounds.minY + bounds.maxY) / 2) * scene.scale);
+  requestRender();
 }
 
 function resetSelection() {
@@ -369,7 +448,11 @@ function resetSelection() {
   muscleName.textContent = "Full Body";
   detailTitle.textContent = "Full Body";
   muscleDescription.textContent = "Hover over a muscle group to highlight it. Click a region to focus the view and inspect that group.";
-  document.querySelectorAll(".muscle-chip").forEach((chip) => chip.classList.remove("active"));
+  document.querySelectorAll(".muscle-chip").forEach((chip) => {
+    chip.classList.remove("active");
+    chip.setAttribute("aria-pressed", "false");
+  });
+  requestRender();
 }
 
 function muscleBounds(item) {
@@ -423,6 +506,13 @@ function pathBounds(commands) {
 }
 
 function muscleFill(regionId) {
+  const muscle = renderRegions.find((region) => region.id === regionId)?.muscle;
+  const isRecovering = muscle && state.recovery.get(muscle.id)?.status === "needs_recovery";
+  if (isRecovering) {
+    if (regionId.includes("Adductor") || regionId.includes("Oblique")) return basePalette.needsRecoveryDeep;
+    if (regionId.includes("Shin") || regionId.includes("Forearm") || regionId.includes("Calf")) return basePalette.needsRecoveryLight;
+    return basePalette.needsRecovery;
+  }
   if (regionId.includes("Adductor") || regionId.includes("Oblique")) {
     return basePalette.muscleDeep;
   }
@@ -433,5 +523,5 @@ function muscleFill(regionId) {
 }
 
 window.addEventListener("beforeunload", () => {
-  cancelAnimationFrame(animationFrame);
+  if (animationFrame !== null) cancelAnimationFrame(animationFrame);
 });

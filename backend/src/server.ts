@@ -1,56 +1,70 @@
 import "dotenv/config";
 import cors from "cors";
 import express, { type Request, type Response } from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { clearSessionCookie, createSession, currentUserId, deleteCurrentSession, hashPassword, requireUser, verifyPassword } from "./auth.js";
 import { pool } from "./db.js";
+import { accountInput, loginInput, workoutInput } from "./validation.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
 
-app.use(cors());
+const allowedOrigins = process.env.FRONTEND_ORIGIN?.split(",").map((origin) => origin.trim()).filter(Boolean);
+if (allowedOrigins?.length) app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
-
-const uuid = z.string().uuid();
-const workoutInput = z.object({
-  userId: uuid,
-  startedAt: z.string().datetime().optional(),
-  finishedAt: z.string().datetime().optional(),
-  notes: z.string().trim().max(2000).optional(),
-  exercises: z.array(z.object({
-    exerciseId: z.number().int().positive(),
-    notes: z.string().trim().max(1000).optional(),
-    sets: z.array(z.object({
-      weightKg: z.number().nonnegative().optional(),
-      reps: z.number().int().positive().optional(),
-      durationSeconds: z.number().int().positive().optional(),
-      rir: z.number().int().min(0).max(10).optional(),
-      completedAt: z.string().datetime().optional()
-    }).refine((set) => set.reps !== undefined || set.durationSeconds !== undefined, "A set needs reps or duration." )).min(1)
-  })).min(1)
-}).refine((workout) => !workout.finishedAt || !workout.startedAt || workout.finishedAt >= workout.startedAt, {
-  message: "finishedAt must be after startedAt."
-});
-
-function requestUserId(req: Request, res: Response): string | undefined {
-  const parsed = uuid.safeParse(req.query.userId);
-  if (parsed.success) return parsed.data;
-  res.status(400).json({ error: "A valid userId query parameter is required." });
-  return undefined;
-}
+app.use(express.static(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")));
 
 app.get("/health", async (_req, res) => {
   await pool.query("select 1");
   res.json({ ok: true });
 });
 
-app.post("/api/users", async (req, res, next) => {
+app.post("/api/auth/register", async (req, res, next) => {
   try {
-    const input = z.object({ email: z.string().email(), displayName: z.string().trim().max(100).optional() }).parse(req.body);
+    const input = accountInput.parse(req.body);
+    const passwordHash = await hashPassword(input.password);
     const result = await pool.query(
-      "insert into users (email, display_name) values ($1, $2) returning id, email, display_name as \"displayName\", created_at as \"createdAt\"",
-      [input.email.toLowerCase(), input.displayName ?? null]
+      "insert into users (email, display_name, password_hash) values ($1, $2, $3) returning id, email, display_name as \"displayName\", created_at as \"createdAt\"",
+      [input.email.toLowerCase(), input.displayName ?? null, passwordHash]
     );
+    await createSession(res, result.rows[0].id);
     res.status(201).json(result.rows[0]);
+  } catch (error) { next(error); }
+});
+
+app.post("/api/auth/login", async (req, res, next) => {
+  try {
+    const input = loginInput.parse(req.body);
+    const result = await pool.query<{ id: string; email: string; displayName: string | null; passwordHash: string | null }>(
+      "select id, email, display_name as \"displayName\", password_hash as \"passwordHash\" from users where email = $1",
+      [input.email.toLowerCase()]
+    );
+    const user = result.rows[0];
+    if (!user?.passwordHash || !(await verifyPassword(input.password, user.passwordHash))) {
+      return res.status(401).json({ error: "Email or password is incorrect." });
+    }
+    await createSession(res, user.id);
+    res.json({ id: user.id, email: user.email, displayName: user.displayName });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/auth/logout", async (req, res, next) => {
+  try {
+    await deleteCurrentSession(req);
+    clearSessionCookie(res);
+    res.status(204).end();
+  } catch (error) { next(error); }
+});
+
+app.get("/api/auth/me", async (req, res, next) => {
+  try {
+    const userId = await currentUserId(req);
+    if (!userId) return res.status(401).json({ error: "Authentication is required." });
+    const result = await pool.query("select id, email, display_name as \"displayName\", created_at as \"createdAt\" from users where id = $1", [userId]);
+    if (!result.rowCount) return res.status(401).json({ error: "Authentication is required." });
+    res.json(result.rows[0]);
   } catch (error) { next(error); }
 });
 
@@ -72,15 +86,16 @@ app.get("/api/exercises", async (_req, res, next) => {
 app.post("/api/workouts", async (req, res, next) => {
   const parsed = workoutInput.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Invalid workout payload.", details: parsed.error.flatten() });
+  const userId = await requireUser(req, res); if (!userId) return;
   const input = parsed.data;
   const client = await pool.connect();
   try {
     await client.query("begin");
-    const user = await client.query("select id from users where id = $1", [input.userId]);
+    const user = await client.query("select id from users where id = $1", [userId]);
     if (!user.rowCount) { await client.query("rollback"); return res.status(404).json({ error: "User not found." }); }
     const workout = await client.query<{ id: string }>(
       "insert into workouts (user_id, started_at, finished_at, notes) values ($1, $2, $3, $4) returning id",
-      [input.userId, input.startedAt ?? new Date().toISOString(), input.finishedAt ?? null, input.notes ?? null]
+      [userId, input.startedAt ?? new Date().toISOString(), input.finishedAt ?? null, input.notes ?? null]
     );
     for (const [exerciseIndex, exercise] of input.exercises.entries()) {
       const exists = await client.query("select id from exercises where id = $1", [exercise.exerciseId]);
@@ -105,7 +120,7 @@ app.post("/api/workouts", async (req, res, next) => {
 });
 
 app.get("/api/workouts", async (req, res, next) => {
-  const userId = requestUserId(req, res); if (!userId) return;
+  const userId = await requireUser(req, res); if (!userId) return;
   try {
     const result = await pool.query(`
       select w.id, w.started_at as "startedAt", w.finished_at as "finishedAt", w.notes,
@@ -123,7 +138,7 @@ app.get("/api/workouts", async (req, res, next) => {
 });
 
 app.get("/api/muscles/recovery", async (req, res, next) => {
-  const userId = requestUserId(req, res); if (!userId) return;
+  const userId = await requireUser(req, res); if (!userId) return;
   try {
     const result = await pool.query(`
       with last_training as (
@@ -152,7 +167,7 @@ app.get("/api/muscles/recovery", async (req, res, next) => {
 });
 
 app.get("/api/muscles/:slug/history", async (req, res, next) => {
-  const userId = requestUserId(req, res); if (!userId) return;
+  const userId = await requireUser(req, res); if (!userId) return;
   try {
     const result = await pool.query(`
       select w.id as "workoutId", w.started_at as "startedAt", w.finished_at as "finishedAt", e.name as "exerciseName",
@@ -174,8 +189,11 @@ app.get("/api/muscles/:slug/history", async (req, res, next) => {
 
 app.use((error: unknown, _req: Request, res: Response, _next: express.NextFunction) => {
   console.error(error);
-  const message = error instanceof Error ? error.message : "Unexpected server error.";
-  res.status(500).json({ error: message });
+  if (error instanceof z.ZodError) return res.status(400).json({ error: "Invalid request data.", details: error.flatten() });
+  if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+    return res.status(409).json({ error: "An account with that email already exists." });
+  }
+  res.status(500).json({ error: "Unexpected server error." });
 });
 
 app.listen(port, () => console.log(`Muscle Recovery API listening on http://localhost:${port}`));
