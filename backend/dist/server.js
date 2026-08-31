@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { clearSessionCookie, createSession, currentUserId, deleteCurrentSession, hashPassword, requireUser, verifyPassword } from "./auth.js";
 import { pool } from "./db.js";
-import { accountInput, loginInput, workoutInput } from "./validation.js";
+import { accountInput, customExerciseInput, loginInput, workoutInput } from "./validation.js";
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
 const allowedOrigins = process.env.FRONTEND_ORIGIN?.split(",").map((origin) => origin.trim()).filter(Boolean);
@@ -84,6 +84,62 @@ app.get("/api/exercises", async (_req, res, next) => {
     }
     catch (error) {
         next(error);
+    }
+});
+app.get("/api/muscle-groups", async (req, res, next) => {
+    const userId = await requireUser(req, res);
+    if (!userId)
+        return;
+    try {
+        const result = await pool.query(`
+      select id, slug, name, description, default_recovery_hours as "defaultRecoveryHours", map_view as "mapView"
+      from muscle_groups
+      order by name
+    `);
+        res.json(result.rows);
+    }
+    catch (error) {
+        next(error);
+    }
+});
+app.post("/api/exercises", async (req, res, next) => {
+    const parsed = customExerciseInput.safeParse(req.body);
+    if (!parsed.success)
+        return res.status(400).json({ error: "Invalid exercise payload.", details: parsed.error.flatten() });
+    const userId = await requireUser(req, res);
+    if (!userId)
+        return;
+    const input = parsed.data;
+    const client = await pool.connect();
+    try {
+        await client.query("begin");
+        const exercise = await client.query("insert into exercises (name, instructions) values ($1, $2) returning id", [input.name, null]);
+        for (const muscle of input.muscles) {
+            const validGroup = await client.query("select id from muscle_groups where id = $1", [muscle.muscleGroupId]);
+            if (!validGroup.rowCount) {
+                throw new Error(`Muscle group ${muscle.muscleGroupId} does not exist.`);
+            }
+            await client.query("insert into exercise_muscles (exercise_id, muscle_group_id, role, load_factor) values ($1, $2, $3, $4) on conflict (exercise_id, muscle_group_id) do update set role = excluded.role, load_factor = excluded.load_factor", [exercise.rows[0].id, muscle.muscleGroupId, muscle.role, 1]);
+        }
+        await client.query("commit");
+        const fullExercise = await pool.query(`
+      select e.id, e.name, e.instructions,
+        coalesce(json_agg(json_build_object('slug', mg.slug, 'name', mg.name, 'role', em.role, 'loadFactor', em.load_factor) order by em.role, mg.name)
+          filter (where mg.id is not null), '[]') as muscles
+      from exercises e
+      left join exercise_muscles em on em.exercise_id = e.id
+      left join muscle_groups mg on mg.id = em.muscle_group_id
+      where e.id = $1
+      group by e.id
+    `, [exercise.rows[0].id]);
+        res.status(201).json(fullExercise.rows[0]);
+    }
+    catch (error) {
+        await client.query("rollback");
+        next(error);
+    }
+    finally {
+        client.release();
     }
 });
 app.post("/api/workouts", async (req, res, next) => {

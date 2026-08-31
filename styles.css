@@ -394,7 +394,9 @@ h2 {
 .workout-heading,
 .exercise-card-header,
 .workout-actions,
-.exercise-picker > div {
+.exercise-picker > div,
+.custom-exercise-header,
+.custom-exercise-actions {
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -402,7 +404,9 @@ h2 {
 }
 
 .notes-field,
-.exercise-picker {
+.exercise-picker,
+.custom-exercise-name-field,
+.custom-muscle-row {
   display: grid;
   gap: 7px;
   color: var(--muted);
@@ -411,6 +415,58 @@ h2 {
 }
 
 .notes-field { min-width: min(320px, 100%); }
+
+.custom-exercise {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.custom-exercise-header {
+  align-items: center;
+}
+
+.custom-exercise-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.custom-exercise-form {
+  display: grid;
+  gap: 14px;
+}
+
+.custom-exercise-form[hidden] {
+  display: none;
+}
+
+.custom-muscle-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.custom-muscle-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.custom-muscle-row select {
+  min-width: 0;
+}
+
+.remove-muscle-button {
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 800;
+}
 
 input,
 select {
@@ -487,8 +543,11 @@ select {
 @media (max-width: 600px) {
   .workout-heading,
   .exercise-picker > div,
-  .workout-actions { align-items: stretch; flex-direction: column; }
+  .workout-actions,
+  .custom-exercise-header,
+  .custom-exercise-actions { align-items: stretch; flex-direction: column; }
   .notes-field, .exercise-picker select { min-width: 0; }
+  .custom-muscle-row { grid-template-columns: 1fr; }
   .set-table { margin-right: -2px; }
   .set-header, .set-row { min-width: 480px; }
 }

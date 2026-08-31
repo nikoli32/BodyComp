@@ -19,6 +19,25 @@ export const workoutInput = z.object({
   message: "finishedAt must be after startedAt.",
 });
 
+export const customExerciseInput = z.object({
+  name: z.string().trim().min(2).max(200),
+  muscles: z.array(z.object({
+    muscleGroupId: z.number().int().positive(),
+    role: z.enum(["primary", "secondary"]),
+  })).min(1).refine((muscles) => muscles.some((muscle) => muscle.role === "primary"), {
+    message: "At least one primary muscle is required.",
+  }).refine((muscles) => {
+    const seen = new Set<number>();
+    return muscles.every((muscle) => {
+      if (seen.has(muscle.muscleGroupId)) return false;
+      seen.add(muscle.muscleGroupId);
+      return true;
+    });
+  }, {
+    message: "Each muscle group can only be assigned once.",
+  }),
+});
+
 export const accountInput = z.object({
   email: z.string().email().max(320),
   password: z.string().min(12).max(256),

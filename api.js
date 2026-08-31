@@ -25,6 +25,17 @@
     return request("/api/exercises");
   }
 
+  async function getMuscleGroups() {
+    return request("/api/muscle-groups");
+  }
+
+  async function createExercise(exercise) {
+    return request("/api/exercises", {
+      method: "POST",
+      body: JSON.stringify(exercise),
+    });
+  }
+
   async function createWorkout(workout) {
     return request("/api/workouts", {
       method: "POST",
@@ -36,6 +47,8 @@
     apiBaseUrl,
     getRecovery,
     getExercises,
+    getMuscleGroups,
+    createExercise,
     createWorkout,
     getCurrentUser: () => request("/api/auth/me"),
     register: (account) => request("/api/auth/register", { method: "POST", body: JSON.stringify(account) }),
