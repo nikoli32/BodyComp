@@ -540,6 +540,140 @@ select {
 .auth-form label { display: grid; gap: 7px; color: var(--muted); font-size: 0.85rem; font-weight: 750; }
 .field-hint { margin: -7px 0 0; color: var(--quiet); font-size: 0.8rem; }
 
+/* Navigation Hub - Scalable Top Navigation - Thin Line Style */
+.nav-hub {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 8px 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.nav-hub__toggle {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.nav-hub__hamburger,
+.nav-hub__hamburger::before,
+.nav-hub__hamburger::after {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.nav-hub__hamburger::before,
+.nav-hub__hamburger::after {
+  content: '';
+}
+
+.nav-hub__toggle[aria-expanded="true"] .nav-hub__hamburger {
+  background: transparent;
+}
+
+.nav-hub__toggle[aria-expanded="true"] .nav-hub__hamburger::before {
+  transform: rotate(45deg) translate(8px, 8px);
+}
+
+.nav-hub__toggle[aria-expanded="true"] .nav-hub__hamburger::after {
+  transform: rotate(-45deg) translate(6px, -6px);
+}
+
+.nav-hub__list {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-hub__item {
+  list-style: none;
+}
+
+.nav-hub__link {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.nav-hub__link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.nav-hub__link.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Mobile Navigation - Hamburger Menu */
+@media (max-width: 560px) {
+  .nav-hub {
+    gap: 0;
+  }
+
+  .nav-hub__toggle {
+    display: flex;
+    order: 1;
+    margin-right: auto;
+  }
+
+  .nav-hub__list {
+    order: 2;
+    position: absolute;
+    top: 50px;
+    left: 22px;
+    flex-direction: column;
+    gap: 4px;
+    width: calc(100% - 44px);
+    max-height: 0;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 0;
+    transition: max-height 0.3s ease;
+  }
+
+  .nav-hub__list.active {
+    max-height: 500px;
+    padding: 8px;
+  }
+
+  .nav-hub__link {
+    width: 100%;
+    display: block;
+    text-align: left;
+  }
+}
+
 @media (max-width: 600px) {
   .workout-heading,
   .exercise-picker > div,
