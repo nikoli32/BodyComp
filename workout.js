@@ -18,7 +18,7 @@
   let exercises = [];
   let muscleGroups = [];
   let workoutExercises = [];
-  let customMuscleAssignments = [{ role: "primary", muscleGroupId: "" }];
+  let customMuscleAssignments = [];
 
   function setStatus(message, kind = "") {
     status.textContent = message;
@@ -174,6 +174,7 @@
     if (!customExerciseForm.hidden) {
       customExerciseName.focus();
       setCustomExerciseStatus("");
+      renderCustomMuscleRows();
     }
   });
   addPrimaryMuscle.addEventListener("click", () => addCustomMuscleRow("primary"));

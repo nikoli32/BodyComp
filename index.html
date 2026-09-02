@@ -13,7 +13,23 @@
           <p class="eyebrow">Body Comp</p>
           <h1>Muscle Recovery Map</h1>
         </div>
-        <a href="auth.html" class="text-button">Sign in</a>
+        <div class="auth-section">
+          <a id="signInButton" href="auth.html" class="text-button">Sign in</a>
+          <div id="profileSection" class="profile-section" hidden>
+            <button id="profileMenuButton" class="profile-button" aria-label="User profile menu" aria-expanded="false" aria-haspopup="true">
+              <span class="profile-avatar" id="profileAvatar"></span>
+            </button>
+            <div id="profileDropdown" class="profile-dropdown" hidden role="menu">
+              <div class="profile-info">
+                <p id="profileName" class="profile-name"></p>
+                <p id="profileEmail" class="profile-email"></p>
+              </div>
+              <hr class="profile-divider" />
+              <button id="profileLink" class="profile-menu-item" role="menuitem">View Profile</button>
+              <button id="logoutButton" class="profile-menu-item" role="menuitem">Logout</button>
+            </div>
+          </div>
+        </div>
       </header>
 
       <section class="home-page">
@@ -56,6 +72,7 @@
     <script src="nav-config.js"></script>
     <script src="nav-utils.js"></script>
     <script src="api.js"></script>
+    <script src="index.js"></script>
     <script src="dashboard.js"></script>
   </body>
 </html>
