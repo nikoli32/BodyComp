@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Navigation Hub Configuration
  *
  * Define all navigation items here. This is a centralized, scalable configuration
@@ -14,17 +14,17 @@ const NAV_CONFIG = [
   {
     label: "Home",
     href: "index.html",
-    icon: "🏠",
+    icon: "ðŸ ",
   },
   {
     label: "Body Map",
     href: "front_view.html",
-    icon: "💪",
+    icon: "ðŸ’ª",
   },
   {
     label: "Log Workout",
     href: "workout.html",
-    icon: "📝",
+    icon: "ðŸ“",
   },
   {
     label: "Workout History",
@@ -32,19 +32,19 @@ const NAV_CONFIG = [
     icon: "History",
   },
   {
-    label: "Profile",
-    href: "profile.html",
-    icon: "👕",
+    label: "Settings",
+    href: "Settings.html",
+    icon: "ðŸ‘•",
   },
   // Future items can be added here without modifying any HTML files:
   // {
   //   label: 'Settings',
   //   href: 'settings.html',
-  //   icon: '⚙️'
+  //   icon: 'âš™ï¸'
   // },
   // {
   //   label: 'History',
   //   href: 'history.html',
-  //   icon: '📊'
+  //   icon: 'ðŸ“Š'
   // }
 ];

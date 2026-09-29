@@ -7,6 +7,7 @@
   const profileName = document.querySelector("#profileName");
   const profileEmail = document.querySelector("#profileEmail");
   const profileLink = document.querySelector("#profileLink");
+  const settingsButton = document.querySelector("#settingsButton");
   const logoutButton = document.querySelector("#logoutButton");
 
   // Check auth state and update UI accordingly
@@ -80,6 +81,11 @@
   profileLink.addEventListener("click", () => {
     // TODO: Implement profile page navigation
     console.log("Profile page not yet implemented");
+  });
+
+  // Handle settings button
+  settingsButton.addEventListener("click", () => {
+    window.location.assign("settings.html");
   });
 
   // Initialize on page load
