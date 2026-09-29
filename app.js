@@ -25,6 +25,11 @@ const basePalette = {
   needsRecoveryDeep: "#9f3e49",
   needsRecoveryLight: "#ef858b",
 };
+const recoveryPalette = {
+  ready: "#2f7fca",
+  primary: "#df4b55",
+  secondary: "#e7b84d",
+};
 
 const muscles = [
   // Front view muscles
@@ -152,6 +157,7 @@ async function init() {
   resizeCanvas();
   requestRender();
   await loadRecovery();
+  window.setInterval(loadRecovery, 60_000);
 }
 
 function muscle(name, description, regions) {
@@ -222,9 +228,12 @@ function renderMuscleList() {
     button.textContent = item.name;
     const recovery = state.recovery.get(item.id);
     const statusLabel = recoveryLabel(recovery?.status);
-    button.setAttribute("aria-label", `${item.name}: ${statusLabel}`);
+    const progress = recoveryProgress(recovery);
+    const recoveryPercent = Math.round(progress * 100);
+    button.setAttribute("aria-label", `${item.name}: ${statusLabel}, ${recoveryPercent}% recovered`);
     button.setAttribute("aria-pressed", String(state.selected?.id === item.id));
-    button.title = `${item.name}: ${statusLabel}`;
+    button.title = `${item.name}: ${statusLabel}, ${recoveryPercent}% recovered`;
+    button.style.setProperty("--recovery-color", recoveryColor(recovery));
     if (recovery) {
       button.classList.add(`status-${recovery.status}`);
     }
@@ -342,7 +351,7 @@ function drawBodyBase() {
 function drawMuscleRegions() {
   renderRegions.forEach((region) => {
     const active = state.hovered?.id === region.muscle.id || state.selected?.id === region.muscle.id;
-    const fill = active ? basePalette.hover : muscleFill(region.id);
+    const fill = active ? basePalette.hover : muscleFill(region.muscle);
     const stroke = active ? basePalette.hoverStroke : basePalette.line;
     fillPath(region.path, fill, stroke, active ? 2.6 : 1.4);
     drawFiber(region.path, active);
@@ -424,7 +433,7 @@ function selectMuscle(item) {
   detailTitle.textContent = item.name;
   const recovery = state.recovery.get(item.id);
   muscleDescription.textContent = recovery
-    ? `${recovery.status === "ready" ? "Ready to train." : `Recovering until ${new Date(recovery.recoveredAt).toLocaleString()}.`} ${item.description}`
+    ? `${recovery.status === "ready" ? "Ready to train." : `${Math.round(recoveryProgress(recovery) * 100)}% recovered; recovering until ${new Date(recovery.recoveredAt).toLocaleString()}.`} ${item.description}`
     : item.description;
 
   document.querySelectorAll(".muscle-chip").forEach((chip) => {
@@ -505,21 +514,32 @@ function pathBounds(commands) {
   };
 }
 
-function muscleFill(regionId) {
-  const muscle = renderRegions.find((region) => region.id === regionId)?.muscle;
-  const isRecovering = muscle && state.recovery.get(muscle.id)?.status === "needs_recovery";
-  if (isRecovering) {
-    if (regionId.includes("Adductor") || regionId.includes("Oblique")) return basePalette.needsRecoveryDeep;
-    if (regionId.includes("Shin") || regionId.includes("Forearm") || regionId.includes("Calf")) return basePalette.needsRecoveryLight;
-    return basePalette.needsRecovery;
-  }
-  if (regionId.includes("Adductor") || regionId.includes("Oblique")) {
-    return basePalette.muscleDeep;
-  }
-  if (regionId.includes("Shin") || regionId.includes("Forearm") || regionId.includes("Calf")) {
-    return basePalette.muscleLight;
-  }
-  return basePalette.muscle;
+function recoveryProgress(recovery) {
+  if (!recovery?.lastTrainedAt) return 1;
+  const recoveryMs = Number(recovery.recoveryHours) * 60 * 60 * 1000;
+  if (!Number.isFinite(recoveryMs) || recoveryMs <= 0) return Number(recovery.recoveryProgress) || 0;
+  const elapsed = Date.now() - new Date(recovery.lastTrainedAt).getTime();
+  return Math.max(0, Math.min(1, elapsed / recoveryMs));
+}
+
+function blendColor(from, to, amount) {
+  const fromRgb = from.match(/\w\w/g).map((value) => parseInt(value, 16));
+  const toRgb = to.match(/\w\w/g).map((value) => parseInt(value, 16));
+  const channel = (index) => Math.round(fromRgb[index] + (toRgb[index] - fromRgb[index]) * amount).toString(16).padStart(2, "0");
+  return `#${channel(0)}${channel(1)}${channel(2)}`;
+}
+
+function recoveryColor(recovery) {
+  if (!recovery?.lastTrainedAt) return recoveryPalette.ready;
+  const tension = Math.max(0, Math.min(1, Number(recovery.tension) || 0));
+  const start = recovery.trainingRole === "secondary"
+    ? blendColor("#f5dc8c", recoveryPalette.secondary, tension)
+    : blendColor("#e47a7f", recoveryPalette.primary, tension);
+  return blendColor(start, recoveryPalette.ready, recoveryProgress(recovery));
+}
+
+function muscleFill(muscle) {
+  return recoveryColor(state.recovery.get(muscle.id));
 }
 
 window.addEventListener("beforeunload", () => {

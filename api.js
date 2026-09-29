@@ -43,6 +43,17 @@
     });
   }
 
+  async function getWorkouts() {
+    return request("/api/workouts");
+  }
+
+  async function updateWorkout(id, workout) {
+    return request(`/api/workouts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(workout),
+    });
+  }
+
   window.MuscleRecoveryApi = {
     apiBaseUrl,
     getRecovery,
@@ -50,6 +61,8 @@
     getMuscleGroups,
     createExercise,
     createWorkout,
+    getWorkouts,
+    updateWorkout,
     getCurrentUser: () => request("/api/auth/me"),
     register: (account) => request("/api/auth/register", { method: "POST", body: JSON.stringify(account) }),
     login: (credentials) => request("/api/auth/login", { method: "POST", body: JSON.stringify(credentials) }),

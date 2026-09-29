@@ -20,7 +20,7 @@
       </header>
 
       <section class="workout-page">
-        <form id="workoutForm" class="panel workout-form">
+        <form id="workoutForm" class="panel workout-form" novalidate>
           <div class="workout-heading">
             <div>
               <p class="eyebrow">Current workout</p>
@@ -46,7 +46,7 @@
               <h3>Create custom workout</h3>
               <button id="toggleCustomExercise" class="button button-secondary" type="button">+ Create custom workout</button>
             </div>
-            <form id="customExerciseForm" class="custom-exercise-form" hidden>
+            <section id="customExerciseForm" class="custom-exercise-form" hidden aria-label="Create custom workout">
               <label class="custom-exercise-name-field">
                 Workout name
                 <input id="customExerciseName" name="customExerciseName" maxlength="200" placeholder="Bench Press" required />
@@ -57,11 +57,11 @@
               <div class="custom-exercise-actions">
                 <button id="addPrimaryMuscle" class="text-button" type="button">+ Add primary muscle</button>
                 <button id="addSecondaryMuscle" class="text-button" type="button">+ Add secondary muscle</button>
-                <button id="saveCustomExercise" class="button" type="submit">Save workout</button>
+                <button id="saveCustomExercise" class="button" type="button">Save workout</button>
               </div>
 
               <p id="customExerciseStatus" class="form-status" role="status"></p>
-            </form>
+            </section>
           </div>
 
           <div id="workoutExercises" class="workout-exercises" aria-live="polite"></div>

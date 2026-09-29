@@ -13,6 +13,7 @@
   const toggleCustomExercise = document.querySelector("#toggleCustomExercise");
   const addPrimaryMuscle = document.querySelector("#addPrimaryMuscle");
   const addSecondaryMuscle = document.querySelector("#addSecondaryMuscle");
+  const saveCustomExercise = document.querySelector("#saveCustomExercise");
   const customExerciseStatus = document.querySelector("#customExerciseStatus");
   const workoutStartedAt = new Date().toISOString();
   let exercises = [];
@@ -69,7 +70,7 @@
   }
 
   function resetCustomExerciseForm() {
-    customExerciseForm.reset();
+    customExerciseName.value = "";
     customMuscleAssignments = [{ role: "primary", muscleGroupId: "" }];
     renderCustomMuscleRows();
     customExerciseForm.hidden = true;
@@ -77,14 +78,36 @@
   }
 
   function addSet(exercise) {
-    exercise.sets.push({ weightKg: "", reps: "", rir: "" });
+    exercise.sets.push({ weight: "", reps: "", rir: "" });
+    renderWorkout();
+  }
+
+  function setExerciseSetCount(exercise, count) {
+    const targetCount = Number(count);
+    if (!Number.isInteger(targetCount) || targetCount < 1) return;
+    while (exercise.sets.length < targetCount) exercise.sets.push({ weight: "", reps: "", rir: "" });
+    exercise.sets.length = targetCount;
+    renderWorkout();
+  }
+
+  function changeWeightUnit(exercise, nextUnit) {
+    if (exercise.weightUnit === nextUnit) return;
+    const factor = nextUnit === "lb" ? 2.2046226218 : 0.45359237;
+    exercise.sets.forEach((set) => {
+      if (set.weight !== "") set.weight = String(Math.round(Number(set.weight) * factor * 100) / 100);
+    });
+    exercise.weightUnit = nextUnit;
     renderWorkout();
   }
 
   function addSelectedExercise() {
-    const selected = exercises.find((exercise) => exercise.id === Number(picker.value));
-    if (!selected) return;
-    workoutExercises.push({ ...selected, localId: window.crypto?.randomUUID?.() || String(Date.now() + Math.random()), sets: [{ weightKg: "", reps: "", rir: "" }] });
+    const selected = exercises.find((exercise) => String(exercise.id) === picker.value);
+    if (!selected) {
+      setStatus("Select an exercise before adding it.", "error");
+      return;
+    }
+    workoutExercises.push({ ...selected, localId: window.crypto?.randomUUID?.() || String(Date.now() + Math.random()), weightUnit: "kg", sets: [{ weight: "", reps: "", rir: "" }] });
+    setStatus("");
     renderWorkout();
   }
 
@@ -100,8 +123,12 @@
           <div><h3>${exercise.name}</h3><p>${exercise.muscles.map((muscle) => muscle.name).join(" · ")}</p></div>
           <button class="text-button remove-exercise" type="button">Remove</button>
         </header>
+        <div class="set-entry-controls">
+          <label>Number of sets <input class="set-count" aria-label="${exercise.name} number of sets" type="number" min="1" step="1" value="${exercise.sets.length}" required></label>
+          <label>Weight unit <select class="weight-unit" aria-label="${exercise.name} weight unit"><option value="kg">Kilograms (kg)</option><option value="lb">Pounds (lb)</option></select></label>
+        </div>
         <div class="set-table" role="group" aria-label="${exercise.name} sets">
-          <div class="set-header"><span>Set</span><span>Weight (kg)</span><span>Reps</span><span>RIR</span><span></span></div>
+          <div class="set-header"><span>Set</span><span>Weight (${exercise.weightUnit})</span><span>Reps</span><span>RIR</span><span></span></div>
           <div class="set-rows"></div>
         </div>
         <button class="text-button add-set" type="button">+ Add set</button>`;
@@ -110,13 +137,20 @@
         renderWorkout();
       });
       card.querySelector(".add-set").addEventListener("click", () => addSet(exercise));
+      card.querySelector(".set-count").addEventListener("change", (event) => setExerciseSetCount(exercise, event.target.value));
+      const weightUnit = card.querySelector(".weight-unit");
+      weightUnit.value = exercise.weightUnit;
+      weightUnit.addEventListener("change", (event) => changeWeightUnit(exercise, event.target.value));
       const rows = card.querySelector(".set-rows");
       exercise.sets.forEach((set, index) => {
         const row = document.createElement("div");
         row.className = "set-row";
         row.innerHTML = `<span>${index + 1}</span><input aria-label="Set ${index + 1} weight in kilograms" type="number" min="0" step="0.5" value="${set.weightKg}" placeholder="Optional"><input aria-label="Set ${index + 1} repetitions" type="number" min="1" step="1" value="${set.reps}" required><input aria-label="Set ${index + 1} reps in reserve" type="number" min="0" max="10" step="1" value="${set.rir}" placeholder="Optional"><button class="remove-set" type="button" aria-label="Remove set ${index + 1}">×</button>`;
         const inputs = row.querySelectorAll("input");
-        ["weightKg", "reps", "rir"].forEach((field, fieldIndex) => inputs[fieldIndex].addEventListener("input", (event) => { set[field] = event.target.value; }));
+        inputs[0].value = set.weight;
+        inputs[0].required = true;
+        inputs[0].setAttribute("aria-label", `Set ${index + 1} weight in ${exercise.weightUnit === "lb" ? "pounds" : "kilograms"}`);
+        ["weight", "reps", "rir"].forEach((field, fieldIndex) => inputs[fieldIndex].addEventListener("input", (event) => { set[field] = event.target.value; }));
         row.querySelector(".remove-set").addEventListener("click", () => {
           exercise.sets.splice(index, 1);
           if (!exercise.sets.length) workoutExercises = workoutExercises.filter((item) => item.localId !== exercise.localId);
@@ -134,9 +168,9 @@
       finishedAt: new Date().toISOString(),
       notes: notes.value.trim() || undefined,
       exercises: workoutExercises.map((exercise) => ({
-        exerciseId: exercise.id,
+        exerciseId: Number(exercise.id),
         sets: exercise.sets.map((set) => ({
-          weightKg: set.weightKg === "" ? undefined : Number(set.weightKg),
+          weightKg: set.weight === "" ? undefined : Number(set.weight) * (exercise.weightUnit === "lb" ? 0.45359237 : 1),
           reps: Number(set.reps),
           rir: set.rir === "" ? undefined : Number(set.rir),
           completedAt: new Date().toISOString(),
@@ -180,8 +214,7 @@
   addPrimaryMuscle.addEventListener("click", () => addCustomMuscleRow("primary"));
   addSecondaryMuscle.addEventListener("click", () => addCustomMuscleRow("secondary"));
 
-  customExerciseForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  async function saveCustomWorkout() {
     const name = customExerciseName.value.trim();
     const muscles = customMuscleAssignments
       .map((assignment) => assignment.muscleGroupId ? { muscleGroupId: Number(assignment.muscleGroupId), role: assignment.role } : null)
@@ -213,11 +246,31 @@
       setCustomExerciseStatus(error.message || "Unable to save custom workout.", "error");
       console.error(error);
     }
-  });
+  }
+
+  function validateWorkout() {
+    if (!workoutExercises.length) {
+      setStatus("Add at least one exercise before finishing your workout.", "error");
+      return false;
+    }
+    for (const exercise of workoutExercises) {
+      for (const [setIndex, set] of exercise.sets.entries()) {
+        const weight = Number(set.weight);
+        const reps = Number(set.reps);
+        if (set.weight === "" || !Number.isFinite(weight) || weight < 0 || set.reps === "" || !Number.isInteger(reps) || reps < 1) {
+          setStatus(`Enter a valid weight and rep count for ${exercise.name}, set ${setIndex + 1}.`, "error");
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  saveCustomExercise.addEventListener("click", saveCustomWorkout);
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!form.reportValidity() || !workoutExercises.length) return;
+    if (!validateWorkout()) return;
     finishButton.disabled = true;
     setStatus("Saving workout…");
     try {

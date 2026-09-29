@@ -364,7 +364,7 @@ h2 {
   height: 9px;
   flex: 0 0 auto;
   border-radius: 999px;
-  background: var(--muscle);
+  background: var(--recovery-color, var(--muscle));
   content: "";
 }
 
@@ -378,7 +378,7 @@ h2 {
 }
 
 .muscle-chip.status-needs_recovery::after {
-  background: #d95f68;
+  background: var(--recovery-color, #d95f68);
 }
 
 .workout-page {
@@ -617,6 +617,9 @@ select {
 
 .exercise-card h3 { margin: 0; font-size: 1rem; }
 .exercise-card-header p { margin-top: 4px; font-size: 0.82rem; }
+.set-entry-controls { display: flex; flex-wrap: wrap; gap: 12px; }
+.set-entry-controls label { display: grid; gap: 5px; color: var(--muted); font-size: 0.78rem; font-weight: 750; }
+.set-entry-controls input { width: 100px; }
 .set-table { overflow-x: auto; }
 .set-header,
 .set-row {
@@ -629,6 +632,13 @@ select {
 .set-row + .set-row { margin-top: 8px; }
 .set-row > span { text-align: center; font-weight: 800; }
 .set-row input { min-width: 0; }
+.history-panel { display: grid; gap: 18px; }
+.history-card { gap: 16px; }
+.history-exercises { display: grid; gap: 16px; }
+.history-exercise { display: grid; gap: 8px; }
+.history-exercise h4 { margin: 0; font-size: 0.92rem; }
+.history-exercise .set-header,
+.history-set-row { grid-template-columns: 52px minmax(130px, 1fr) minmax(110px, 1fr) minmax(90px, 1fr); }
 .remove-set { width: 34px; min-height: 34px; background: transparent; color: var(--muted); font-size: 1.4rem; }
 .form-status.success { color: #83dba0; }
 .form-status.error { color: #ef858b; }

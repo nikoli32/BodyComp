@@ -25,6 +25,11 @@ const NAV_CONFIG = [
     label: 'Log Workout',
     href: 'workout.html',
     icon: '📝'
+  },
+  {
+    label: 'Workout History',
+    href: 'workout-history.html',
+    icon: 'History'
   }
   // Future items can be added here without modifying any HTML files:
   // {
