@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=100vw; height=100vh" />
+    <title>Settings</title>
+    <link rel="stylesheet" href="settings.css" />
+    <script src="api.js"></script>
+  </head>
+  <body>
+    <div class="settings-page">
+      <div class="settings-sidebar">
+        <div class="settings-sidebar__header">
+          <h2 class="settings-sidebar__title">Settings</h2>
+        </div>
+        <nav class="settings-nav" role="tablist" aria-label="Settings sections">
+          <button
+            class="settings-nav__tab active"
+            role="tab"
+            aria-controls="profilePanel"
+            aria-selected="true"
+            data-tab="profile"
+          >
+            <span class="settings-nav__tab-icon" aria-hidden="true">👕</span>
+            <span class="settings-nav__tab-label">Profile</span>
+          </button>
+          <button
+            class="settings-nav__tab"
+            role="tab"
+            aria-controls="workoutHistoryPanel"
+            aria-selected="false"
+            data-tab="workoutHistory"
+          >
+            <span class="settings-nav__tab-icon" aria-hidden="true">📊</span>
+            <span class="settings-nav__tab-label">Workout History</span>
+          </button>
+        </nav>
+      </div>
+      <main class="settings-content">
+        <div
+          id="profilePanel"
+          class="settings-panel active"
+          role="tabpanel"
+          aria-labelledby="profilePanel"
+        >
+          <h3 class="settings-panel__title">Profile Information</h3>
+          <form id="settingsProfileForm" class="settings-form">
+            <div class="settings-form__avatar-section">
+              <img
+                id="settingsAvatar"
+                class="settings-form__avatar"
+                src=""
+                alt="Your avatar"
+              />
+              <button
+                id="changeAvatarBtn"
+                class="settings-form__avatar-btn"
+                type="button"
+              >
+                Change Avatar
+              </button>
+              <input
+                id="avatarInput"
+                class="settings-form__avatar-input"
+                type="file"
+                accept="image/*"
+                hidden
+              />
+            </div>
+            <div class="settings-form__group">
+              <label class="settings-form__label" for="displayName"
+                >Display Name</label
+              >
+              <input
+                id="displayName"
+                class="settings-form__input"
+                type="text"
+                placeholder="Enter your display name"
+              />
+            </div>
+            <div class="settings-form__group">
+              <label class="settings-form__label" for="email">Email</label>
+              <input
+                id="email"
+                class="settings-form__input"
+                type="email"
+                placeholder="Enter your email"
+              />
+            </div>
+            <div class="settings-form__group">
+              <label class="settings-form__label" for="currentPassword"
+                >Current Password</label
+              >
+              <input
+                id="currentPassword"
+                class="settings-form__input settings-form__input--password"
+                type="password"
+                placeholder="Enter current password"
+              />
+            </div>
+            <div class="settings-form__group">
+              <label class="settings-form__label" for="newPassword"
+                >New Password</label
+              >
+              <input
+                id="newPassword"
+                class="settings-form__input settings-form__input--password"
+                type="password"
+                placeholder="Enter new password"
+              />
+            </div>
+            <div class="settings-form__group">
+              <label class="settings-form__label" for="confirmPassword"
+                >Confirm New Password</label
+              >
+              <input
+                id="confirmPassword"
+                class="settings-form__input settings-form__input--password"
+                type="password"
+                placeholder="Confirm new password"
+              />
+            </div>
+            <button
+              id="saveProfileBtn"
+              class="settings-form__submit"
+              type="submit"
+            >
+              Save Changes
+            </button>
+          </form>
+          <div
+            id="profileStatus"
+            class="form-status"
+            role="status"
+            aria-live="polite"
+          ></div>
+        </div>
+        <div
+          id="workoutHistoryPanel"
+          class="settings-panel"
+          role="tabpanel"
+          aria-labelledby="workoutHistoryPanel"
+        >
+          <div class="settings-panel__header">
+            <h3 class="settings-panel__title">Workout History</h3>
+            <button id="createWorkoutBtn" class="settings-panel__action-btn">
+              + New Workout
+            </button>
+          </div>
+          <div id="workoutList" class="workout-list">
+            <div id="workoutHistoryEmpty" class="workout-list__empty" hidden>
+              <p class="workout-list__empty-text">
+                You haven't saved any workouts yet. Visit the Log Workout page
+                to create a new workout.
+              </p>
+            </div>
+          </div>
+          <div
+            id="workoutHistoryStatus"
+            class="form-status"
+            role="status"
+            aria-live="polite"
+          ></div>
+        </div>
+      </main>
+    </div>
+    <!-- Workout Edit Modal -->
+    <div id="workoutEditModal" class="modal-overlay" hidden>
+      <div class="modal">
+        <div class="modal__header">
+          <h3 class="modal__title">Edit Workout</h3>
+          <button
+            id="closeWorkoutEditModal"
+            class="modal__close"
+            aria-label="Close modal"
+          >
+            &times;
+          </button>
+        </div>
+        <form id="editWorkoutForm" class="modal__body">
+          <div class="settings-form__group">
+            <label class="settings-form__label" for="editWorkoutName"
+              >Workout Name</label
+            >
+            <input
+              id="editWorkoutName"
+              class="settings-form__input"
+              type="text"
+              required
+            />
+          </div>
+          <div id="editExerciseList" class="edit-exercise-list"></div>
+          <button
+            id="addExerciseBtn"
+            class="settings-form__action-btn"
+            type="button"
+          >
+            + Add Exercise
+          </button>
+          <div class="modal__footer">
+            <button
+              id="cancelEditWorkout"
+              class="settings-form__cancel-btn"
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              id="saveEditWorkout"
+              class="settings-form__submit"
+              type="submit"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script src="settings.js"></script>
+  </body>
+</html>

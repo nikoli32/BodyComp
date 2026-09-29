@@ -9,7 +9,10 @@
   }
 
   function formatDate(value) {
-    return new Date(value).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+    return new Date(value).toLocaleString([], {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
   }
 
   function workoutPayload(workout) {
@@ -30,25 +33,39 @@
   }
 
   function isValid(workout) {
-    return workout.exercises.every((exercise) => exercise.sets.every((set) => (
-      Number.isFinite(Number(set.weightKg)) && Number(set.weightKg) >= 0
-      && Number.isInteger(Number(set.reps)) && Number(set.reps) > 0
-      && (set.rir === "" || set.rir === null || (Number.isInteger(Number(set.rir)) && Number(set.rir) >= 0 && Number(set.rir) <= 10))
-    )));
+    return workout.exercises.every((exercise) =>
+      exercise.sets.every(
+        (set) =>
+          Number.isFinite(Number(set.weightKg)) &&
+          Number(set.weightKg) >= 0 &&
+          Number.isInteger(Number(set.reps)) &&
+          Number(set.reps) > 0 &&
+          (set.rir === "" ||
+            set.rir === null ||
+            (Number.isInteger(Number(set.rir)) &&
+              Number(set.rir) >= 0 &&
+              Number(set.rir) <= 10)),
+      ),
+    );
   }
 
   function render() {
     list.innerHTML = "";
     if (!workouts.length) {
-      list.innerHTML = '<p class="empty-state">No workouts saved yet. Log a workout to see it here.</p>';
+      list.innerHTML =
+        '<p class="empty-state">No workouts saved yet. Log a workout to see it here.</p>';
       return;
     }
     workouts.forEach((workout) => {
       const card = document.createElement("article");
       card.className = "exercise-card history-card";
-      card.innerHTML = `<header class="exercise-card-header"><div><h3>${formatDate(workout.startedAt)}</h3><p>${workout.exercises.length} exercise${workout.exercises.length === 1 ? "" : "s"}</p></div><button class="button save-history" type="button">Save changes</button></header><label class="notes-field">Workout notes<textarea class="history-notes" maxlength="2000" placeholder="Optional notes"></textarea></label><div class="history-exercises"></div><p class="form-status history-status" role="status"></p>`;
+      card.innerHTML = `<header class="exercise-card-header"><div><h3>${formatDate(workout.startedAt)}</h3><p>${workout.exercises.length} exercise${workout.exercises.length === 1 ? "" : "s"}</p></div><button class="button save-history" type="button">Save changes</button><button class="button delete-history" type="button">Delete</button></header><label class="notes-field">Workout notes<textarea class="history-notes" maxlength="2000" placeholder="Optional notes"></textarea></label><div class="history-exercises"></div><p class="form-status history-status" role="status"></p>`;
       card.querySelector(".history-notes").value = workout.notes || "";
-      card.querySelector(".history-notes").addEventListener("input", (event) => { workout.notes = event.target.value; });
+      card
+        .querySelector(".history-notes")
+        .addEventListener("input", (event) => {
+          workout.notes = event.target.value;
+        });
       const exercises = card.querySelector(".history-exercises");
       workout.exercises.forEach((exercise) => {
         const section = document.createElement("section");
@@ -63,31 +80,72 @@
           inputs[0].value = set.weightKg;
           inputs[1].value = set.reps;
           inputs[2].value = set.rir ?? "";
-          ["weightKg", "reps", "rir"].forEach((field, fieldIndex) => inputs[fieldIndex].addEventListener("input", (event) => { set[field] = event.target.value; }));
+          ["weightKg", "reps", "rir"].forEach((field, fieldIndex) =>
+            inputs[fieldIndex].addEventListener("input", (event) => {
+              set[field] = event.target.value;
+            }),
+          );
           rows.append(row);
         });
         exercises.append(section);
       });
-      card.querySelector(".save-history").addEventListener("click", async () => {
-        const cardStatus = card.querySelector(".history-status");
-        if (!isValid(workout)) {
-          cardStatus.textContent = "Enter a valid weight, rep count, and RIR (0–10) for every set.";
-          cardStatus.className = "form-status history-status error";
-          return;
-        }
-        const button = card.querySelector(".save-history");
-        button.disabled = true;
-        cardStatus.textContent = "Saving changes...";
-        cardStatus.className = "form-status history-status";
-        try {
-          await window.MuscleRecoveryApi.updateWorkout(workout.id, workoutPayload(workout));
-          cardStatus.textContent = "Workout updated. Recovery map data has been recalculated.";
-          cardStatus.className = "form-status history-status success";
-        } catch (error) {
-          button.disabled = false;
-          cardStatus.textContent = error.message || "Unable to save changes.";
-          cardStatus.className = "form-status history-status error";
-        }
+      card
+        .querySelector(".save-history")
+        .addEventListener("click", async () => {
+          const cardStatus = card.querySelector(".history-status");
+          if (!isValid(workout)) {
+            cardStatus.textContent =
+              "Enter a valid weight, rep count, and RIR (0–10) for every set.";
+            cardStatus.className = "form-status history-status error";
+            return;
+          }
+          const button = card.querySelector(".save-history");
+          button.disabled = true;
+          cardStatus.textContent = "Saving changes...";
+          cardStatus.className = "form-status history-status";
+          try {
+            await window.MuscleRecoveryApi.updateWorkout(
+              workout.id,
+              workoutPayload(workout),
+            );
+            cardStatus.textContent =
+              "Workout updated. Recovery map data has been recalculated.";
+            cardStatus.className = "form-status history-status success";
+          } catch (error) {
+            button.disabled = false;
+            cardStatus.textContent = error.message || "Unable to save changes.";
+            cardStatus.className = "form-status history-status error";
+          }
+        });
+      card.querySelector(".delete-history").addEventListener("click", () => {
+        card.querySelector(".history-status").textContent = "";
+        card.querySelector(".history-status").className =
+          "form-status history-status";
+        const confirm = document.createElement("div");
+        confirm.className = "confirm-dialog";
+        confirm.innerHTML = `<div class="confirm-content"><p>Are you sure you want to delete this workout?</p><p class="confirm-subtext">This will also remove it from the exercise list.</p><div class="confirm-actions"><button class="button cancel-confirm" type="button">Cancel</button><button class="button delete-confirm" type="button">Delete</button></div></div>`;
+        document.body.append(confirm);
+        confirm
+          .querySelector(".cancel-confirm")
+          .addEventListener("click", () => {
+            confirm.remove();
+          });
+        confirm
+          .querySelector(".delete-confirm")
+          .addEventListener("click", async () => {
+            confirm.remove();
+            try {
+              await window.MuscleRecoveryApi.deleteWorkout(workout.id);
+              const cardIndex = workouts.findIndex((w) => w.id === workout.id);
+              if (cardIndex !== -1) workouts.splice(cardIndex, 1);
+              render();
+            } catch (error) {
+              card.querySelector(".history-status").textContent =
+                error.message || "Unable to delete workout.";
+              card.querySelector(".history-status").className =
+                "form-status history-status error";
+            }
+          });
       });
       list.append(card);
     });
