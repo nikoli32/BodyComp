@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { clearSessionCookie, createSession, currentUserId, deleteCurrentSession, hashPassword, requireUser, verifyPassword } from "./auth.js";
 import { pool } from "./db.js";
+import { buildMuscleRecovery } from "./recovery.js";
 import { accountInput, customExerciseInput, loginInput, workoutInput } from "./validation.js";
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -256,42 +257,24 @@ app.get("/api/muscles/recovery", async (req, res, next) => {
     if (!userId)
         return;
     try {
-        const result = await pool.query(`
-      with muscle_training as (
-        select em.muscle_group_id, em.role, em.load_factor,
-          coalesce(ws.completed_at, w.finished_at, w.started_at) as trained_at,
-          row_number() over (
-            partition by em.muscle_group_id
-            order by coalesce(ws.completed_at, w.finished_at, w.started_at) desc, em.load_factor desc
-          ) as training_rank
-        from workouts w
-        join workout_exercises we on we.workout_id = w.id
-        join workout_sets ws on ws.workout_exercise_id = we.id
-        join exercise_muscles em on em.exercise_id = we.exercise_id
-        where w.user_id = $1
-      ), last_training as (
-        select muscle_group_id, role, load_factor, trained_at as last_trained_at
-        from muscle_training
-        where training_rank = 1
-      )
-      select mg.slug, mg.name, mg.description, mg.default_recovery_hours as "recoveryHours",
-        lt.last_trained_at as "lastTrainedAt",
-        lt.role as "trainingRole",
-        coalesce(lt.load_factor, 0)::double precision as "tension",
-        lt.last_trained_at + make_interval(hours => mg.default_recovery_hours) as "recoveredAt",
-        case when lt.last_trained_at is null then 1
-          else least(1, greatest(0, extract(epoch from now() - lt.last_trained_at) / (mg.default_recovery_hours * 3600.0)))
-        end::double precision as "recoveryProgress",
-        case when lt.last_trained_at is not null and now() < lt.last_trained_at + make_interval(hours => mg.default_recovery_hours)
-          then 'needs_recovery' else 'ready' end as status,
-        coalesce(json_agg(mr.region_key order by mr.region_key) filter (where mr.id is not null), '[]') as regions
-      from muscle_groups mg
-      left join last_training lt on lt.muscle_group_id = mg.id
-      left join muscle_regions mr on mr.muscle_group_id = mg.id
-      group by mg.id, lt.last_trained_at, lt.role, lt.load_factor
-      order by mg.name
-    `, [userId]);
-        res.json(result.rows);
+        const [muscleResult, trainingResult] = await Promise.all([
+            pool.query(`
+        select mg.slug, mg.name, mg.description, mg.default_recovery_hours as "recoveryHours",
+          coalesce(json_agg(mr.region_key order by mr.region_key) filter (where mr.id is not null), '[]') as regions
+        from muscle_groups mg left join muscle_regions mr on mr.muscle_group_id = mg.id
+        group by mg.id order by mg.name
+      `),
+            pool.query(`
+        select ws.id as "setId", w.id as "workoutId", e.id as "exerciseId", e.name as "exerciseName", mg.slug as "muscleSlug", mg.name as "muscleName",
+          em.role, em.load_factor::double precision as "loadFactor", ws.weight_kg::double precision as "weightKg", ws.reps,
+          ws.rir, coalesce(ws.completed_at, w.finished_at, w.started_at) as "trainedAt"
+        from workouts w join workout_exercises we on we.workout_id = w.id join workout_sets ws on ws.workout_exercise_id = we.id
+        join exercises e on e.id = we.exercise_id join exercise_muscles em on em.exercise_id = e.id join muscle_groups mg on mg.id = em.muscle_group_id
+        where w.user_id = $1 and ws.weight_kg is not null and ws.reps is not null
+      `, [userId]),
+        ]);
+        const trainingSets = trainingResult.rows.map((row) => ({ ...row, trainedAt: new Date(row.trainedAt) }));
+        res.json(buildMuscleRecovery(muscleResult.rows, trainingSets));
     }
     catch (error) {
         next(error);

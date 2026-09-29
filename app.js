@@ -26,10 +26,12 @@ const basePalette = {
   needsRecoveryLight: "#ef858b",
 };
 const recoveryPalette = {
-  ready: "#2f7fca",
-  primary: "#df4b55",
-  secondary: "#e7b84d",
+  ready: "#4fae72",
+  light: "#b7c95c",
+  moderate: "#e5a94a",
+  high: "#d95f68",
 };
+const recoveryDemandThresholds = { ready: 20, light: 50, moderate: 75 };
 
 const muscles = [
   // Front view muscles
@@ -228,11 +230,10 @@ function renderMuscleList() {
     button.textContent = item.name;
     const recovery = state.recovery.get(item.id);
     const statusLabel = recoveryLabel(recovery?.status);
-    const progress = recoveryProgress(recovery);
-    const recoveryPercent = Math.round(progress * 100);
-    button.setAttribute("aria-label", `${item.name}: ${statusLabel}, ${recoveryPercent}% recovered`);
+    const demandPercent = Math.round(Number(recovery?.recoveryDemand) || 0);
+    button.setAttribute("aria-label", `${item.name}: ${statusLabel}, ${demandPercent}% recovery demand`);
     button.setAttribute("aria-pressed", String(state.selected?.id === item.id));
-    button.title = `${item.name}: ${statusLabel}, ${recoveryPercent}% recovered`;
+    button.title = `${item.name}: ${statusLabel}, ${demandPercent}% recovery demand`;
     button.style.setProperty("--recovery-color", recoveryColor(recovery));
     if (recovery) {
       button.classList.add(`status-${recovery.status}`);
@@ -432,9 +433,16 @@ function selectMuscle(item) {
   muscleName.textContent = item.name;
   detailTitle.textContent = item.name;
   const recovery = state.recovery.get(item.id);
-  muscleDescription.textContent = recovery
-    ? `${recovery.status === "ready" ? "Ready to train." : `${Math.round(recoveryProgress(recovery) * 100)}% recovered; recovering until ${new Date(recovery.recoveredAt).toLocaleString()}.`} ${item.description}`
-    : item.description;
+  if (!recovery) {
+    muscleDescription.textContent = item.description;
+  } else if (!recovery.lastTrainedAt) {
+    muscleDescription.textContent = `No logged training yet. ${item.description}`;
+  } else {
+    const demand = Math.round(Number(recovery.recoveryDemand) || 0);
+    const exercises = recovery.contributingExercises?.join(", ") || "recent training";
+    const readyAt = recovery.estimatedReadyAt ? new Date(recovery.estimatedReadyAt).toLocaleString() : "now";
+    muscleDescription.textContent = `${demand}% estimated recovery demand (${recovery.status === "ready" ? "ready to train" : "recovering"}). Last trained ${new Date(recovery.lastTrainedAt).toLocaleString()} with ${recovery.totalSets} set${recovery.totalSets === 1 ? "" : "s"} of ${exercises}${recovery.averageRir === null ? "" : ` at ${recovery.averageRir} average RIR`}. Estimated ready: ${readyAt}. ${item.description}`;
+  }
 
   document.querySelectorAll(".muscle-chip").forEach((chip) => {
     chip.classList.toggle("active", chip.textContent === item.name);
@@ -514,14 +522,6 @@ function pathBounds(commands) {
   };
 }
 
-function recoveryProgress(recovery) {
-  if (!recovery?.lastTrainedAt) return 1;
-  const recoveryMs = Number(recovery.recoveryHours) * 60 * 60 * 1000;
-  if (!Number.isFinite(recoveryMs) || recoveryMs <= 0) return Number(recovery.recoveryProgress) || 0;
-  const elapsed = Date.now() - new Date(recovery.lastTrainedAt).getTime();
-  return Math.max(0, Math.min(1, elapsed / recoveryMs));
-}
-
 function blendColor(from, to, amount) {
   const fromRgb = from.match(/\w\w/g).map((value) => parseInt(value, 16));
   const toRgb = to.match(/\w\w/g).map((value) => parseInt(value, 16));
@@ -530,12 +530,11 @@ function blendColor(from, to, amount) {
 }
 
 function recoveryColor(recovery) {
-  if (!recovery?.lastTrainedAt) return recoveryPalette.ready;
-  const tension = Math.max(0, Math.min(1, Number(recovery.tension) || 0));
-  const start = recovery.trainingRole === "secondary"
-    ? blendColor("#f5dc8c", recoveryPalette.secondary, tension)
-    : blendColor("#e47a7f", recoveryPalette.primary, tension);
-  return blendColor(start, recoveryPalette.ready, recoveryProgress(recovery));
+  const demand = Math.max(0, Math.min(100, Number(recovery?.recoveryDemand) || 0));
+  if (demand <= recoveryDemandThresholds.ready) return recoveryPalette.ready;
+  if (demand <= recoveryDemandThresholds.light) return recoveryPalette.light;
+  if (demand <= recoveryDemandThresholds.moderate) return recoveryPalette.moderate;
+  return recoveryPalette.high;
 }
 
 function muscleFill(muscle) {
