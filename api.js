@@ -34,6 +34,17 @@
     return request("/api/exercises");
   }
 
+  async function getCustomExercises() {
+    return request("/api/custom-exercises");
+  }
+
+  async function updateCustomExercise(id, muscles) {
+    return request(`/api/custom-exercises/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ muscles }),
+    });
+  }
+
   async function getMuscleGroups() {
     return request("/api/muscle-groups");
   }
@@ -71,6 +82,8 @@
     apiBaseUrl,
     getRecovery,
     getExercises,
+    getCustomExercises,
+    updateCustomExercise,
     getMuscleGroups,
     createExercise,
     createWorkout,

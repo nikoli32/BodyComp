@@ -471,6 +471,60 @@ h2 {
   min-width: 0;
 }
 
+.custom-workouts-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.custom-workout-list {
+  display: grid;
+  gap: 14px;
+}
+
+.custom-workout-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.custom-workout-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.custom-workout-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.custom-workout-assignment-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 0.45fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.custom-workout-assignment-row label {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.custom-workout-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.custom-workout-actions .button {
+  margin-left: auto;
+}
+
 .remove-muscle-button {
   min-height: 42px;
   padding: 9px 12px;
@@ -959,6 +1013,15 @@ textarea {
   }
   .custom-muscle-row {
     grid-template-columns: 1fr;
+  }
+  .custom-workout-assignment-row {
+    grid-template-columns: minmax(0, 1fr) minmax(110px, 0.7fr);
+  }
+  .custom-workout-assignment-row .remove-muscle-button {
+    grid-column: 1 / -1;
+  }
+  .custom-workout-actions .button {
+    margin-left: 0;
   }
   .set-table {
     margin-right: -2px;

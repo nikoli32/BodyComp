@@ -22,6 +22,7 @@ import {
 import {
   accountInput,
   customExerciseInput,
+  customExerciseMusclesInput,
   loginInput,
   workoutInput,
 } from "./validation.js";
@@ -114,7 +115,9 @@ app.get("/api/auth/me", async (req, res, next) => {
   }
 });
 
-app.get("/api/exercises", async (_req, res, next) => {
+app.get("/api/exercises", async (req, res, next) => {
+  const userId = await requireUser(req, res);
+  if (!userId) return;
   try {
     const result = await pool.query(`
       select e.id, e.name, e.instructions,
@@ -123,8 +126,29 @@ app.get("/api/exercises", async (_req, res, next) => {
       from exercises e
       left join exercise_muscles em on em.exercise_id = e.id
       left join muscle_groups mg on mg.id = em.muscle_group_id
+      where e.created_by_user_id is null or e.created_by_user_id = $1
       group by e.id order by e.name
-    `);
+    `, [userId]);
+    res.json(result.rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/custom-exercises", async (req, res, next) => {
+  const userId = await requireUser(req, res);
+  if (!userId) return;
+  try {
+    const result = await pool.query(`
+      select e.id, e.name, e.instructions,
+        coalesce(json_agg(json_build_object('slug', mg.slug, 'name', mg.name, 'role', em.role, 'loadFactor', em.load_factor) order by em.role, mg.name)
+          filter (where mg.id is not null), '[]') as muscles
+      from exercises e
+      left join exercise_muscles em on em.exercise_id = e.id
+      left join muscle_groups mg on mg.id = em.muscle_group_id
+      where e.created_by_user_id = $1
+      group by e.id order by e.name
+    `, [userId]);
     res.json(result.rows);
   } catch (error) {
     next(error);
@@ -162,8 +186,8 @@ app.post("/api/exercises", async (req, res, next) => {
   try {
     await client.query("begin");
     const exercise = await client.query<{ id: string }>(
-      "insert into exercises (name, instructions) values ($1, $2) returning id",
-      [input.name, null],
+      "insert into exercises (name, instructions, created_by_user_id) values ($1, $2, $3) returning id",
+      [input.name, null, userId],
     );
 
     for (const muscle of input.muscles) {
@@ -208,6 +232,74 @@ app.post("/api/exercises", async (req, res, next) => {
   }
 });
 
+app.put("/api/custom-exercises/:exerciseId", async (req, res, next) => {
+  const parsed = customExerciseMusclesInput.safeParse(req.body);
+  if (!parsed.success)
+    return res.status(400).json({
+      error: "Invalid muscle assignments.",
+      details: parsed.error.flatten(),
+    });
+  const userId = await requireUser(req, res);
+  if (!userId) return;
+
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const exercise = await client.query<{ id: string; name: string }>(
+      "select id, name from exercises where id = $1 and created_by_user_id = $2 for update",
+      [req.params.exerciseId, userId],
+    );
+    if (!exercise.rowCount) {
+      await client.query("rollback");
+      return res.status(404).json({ error: "Custom workout not found." });
+    }
+
+    for (const muscle of parsed.data.muscles) {
+      const validGroup = await client.query(
+        "select id from muscle_groups where id = $1",
+        [muscle.muscleGroupId],
+      );
+      if (!validGroup.rowCount) {
+        await client.query("rollback");
+        return res.status(400).json({ error: "A selected muscle group does not exist." });
+      }
+    }
+
+    await client.query("delete from exercise_muscles where exercise_id = $1", [
+      exercise.rows[0].id,
+    ]);
+    for (const muscle of parsed.data.muscles) {
+      await client.query(
+        "insert into exercise_muscles (exercise_id, muscle_group_id, role, load_factor) values ($1, $2, $3, $4)",
+        [
+          exercise.rows[0].id,
+          muscle.muscleGroupId,
+          muscle.role,
+          muscle.role === "primary" ? 1 : 0.6,
+        ],
+      );
+    }
+    await client.query("commit");
+
+    const updatedExercise = await pool.query(`
+      select e.id, e.name, e.instructions,
+        coalesce(json_agg(json_build_object('slug', mg.slug, 'name', mg.name, 'role', em.role, 'loadFactor', em.load_factor) order by em.role, mg.name)
+          filter (where mg.id is not null), '[]') as muscles
+      from exercises e
+      left join exercise_muscles em on em.exercise_id = e.id
+      left join muscle_groups mg on mg.id = em.muscle_group_id
+      where e.id = $1
+      group by e.id
+    `, [exercise.rows[0].id]);
+    res.json(updatedExercise.rows[0]);
+  } catch (error) {
+    await client.query("rollback");
+    next(error);
+  } finally {
+    client.release();
+  }
+});
+
 app.post("/api/workouts", async (req, res, next) => {
   const parsed = workoutInput.safeParse(req.body);
   if (!parsed.success)
@@ -219,8 +311,8 @@ app.post("/api/workouts", async (req, res, next) => {
       });
   const userId = await requireUser(req, res);
   if (!userId) return;
-  const input = parsed.data;
-  const client = await pool.connect();
+    const input = parsed.data;
+    const client = await pool.connect();
   try {
     await client.query("begin");
     const user = await client.query("select id from users where id = $1", [
@@ -241,8 +333,8 @@ app.post("/api/workouts", async (req, res, next) => {
     );
     for (const [exerciseIndex, exercise] of input.exercises.entries()) {
       const exists = await client.query(
-        "select id from exercises where id = $1",
-        [exercise.exerciseId],
+        "select id from exercises where id = $1 and (created_by_user_id is null or created_by_user_id = $2)",
+        [exercise.exerciseId, userId],
       );
       if (!exists.rowCount)
         throw new Error(`Exercise ${exercise.exerciseId} does not exist.`);
@@ -344,6 +436,16 @@ app.put("/api/workouts/:workoutId", async (req, res, next) => {
     if (!existing.rowCount) {
       await client.query("rollback");
       return res.status(404).json({ error: "Workout not found." });
+    }
+    for (const exercise of input.exercises) {
+      const available = await client.query(
+        "select id from exercises where id = $1 and (created_by_user_id is null or created_by_user_id = $2)",
+        [exercise.exerciseId, userId],
+      );
+      if (!available.rowCount) {
+        await client.query("rollback");
+        return res.status(404).json({ error: "Exercise not found." });
+      }
     }
     await client.query(
       "update workouts set started_at = $1, finished_at = $2, notes = $3 where id = $4",

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   accountInput,
   customExerciseInput,
+  customExerciseMusclesInput,
   workoutInput,
 } from "../dist/validation.js";
 
@@ -90,6 +91,17 @@ test("custom exercise validation rejects duplicate muscle assignments", () => {
         { muscleGroupId: 1, role: "secondary" },
       ],
     }).success,
+    false,
+  );
+});
+
+test("custom exercise muscle updates accept assignments without an exercise name", () => {
+  assert.equal(
+    customExerciseMusclesInput.safeParse({ muscles: validCustomExercise.muscles }).success,
+    true,
+  );
+  assert.equal(
+    customExerciseMusclesInput.safeParse({ muscles: [{ muscleGroupId: 1, role: "secondary" }] }).success,
     false,
   );
 });
