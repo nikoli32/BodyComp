@@ -70,7 +70,9 @@
     deleteButton.type = "button";
     deleteButton.textContent = "Delete workout";
     deleteButton.addEventListener("click", async () => {
-      if (!window.confirm(`Delete ${exercise.name} from your custom workouts?`)) {
+      if (
+        !window.confirm(`Delete ${exercise.name} from your custom workouts?`)
+      ) {
         return;
       }
       deleteButton.disabled = true;
@@ -78,7 +80,9 @@
         await window.MuscleRecoveryApi.deleteCustomExercise(exercise.id);
         card.remove();
         if (!workoutList.children.length) {
-          setStatus("No custom workouts yet. Create one while logging a workout.");
+          setStatus(
+            "No custom workouts yet. Create one while logging a workout.",
+          );
         }
       } catch (error) {
         exerciseStatus.textContent =
