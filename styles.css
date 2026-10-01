@@ -57,6 +57,7 @@ button {
 
 .titlebar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 18px;
   align-items: center;
@@ -469,7 +470,8 @@ h2 {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 42px;
   padding: 9px 11px;
@@ -479,6 +481,8 @@ select {
   color: var(--text);
   font: inherit;
 }
+
+textarea { min-height: 76px; resize: vertical; }
 
 .exercise-picker select { min-width: 260px; }
 
@@ -507,6 +511,7 @@ select {
   position: relative;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .profile-section {
@@ -634,12 +639,39 @@ select {
 .set-row input { min-width: 0; }
 .history-panel { display: grid; gap: 18px; }
 .history-card { gap: 16px; }
+.history-session-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.history-session-fields label,
+.history-exercise-header label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
 .history-exercises { display: grid; gap: 16px; }
 .history-exercise { display: grid; gap: 8px; }
-.history-exercise h4 { margin: 0; font-size: 0.92rem; }
+.history-exercise-header,
+.history-actions {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.history-exercise-header label { flex: 1; }
+.history-exercise-header .text-button { flex: 0 0 auto; }
+.history-actions { align-items: center; }
+.history-add-exercise { display: flex; gap: 8px; min-width: 0; }
+.history-add-exercise select { min-width: 180px; }
+.history-actions .form-status { text-align: right; }
 .history-exercise .set-header,
-.history-set-row { grid-template-columns: 52px minmax(130px, 1fr) minmax(110px, 1fr) minmax(90px, 1fr); }
+.history-set-row { grid-template-columns: 44px repeat(4, minmax(104px, 1fr)) 38px; }
 .remove-set { width: 34px; min-height: 34px; background: transparent; color: var(--muted); font-size: 1.4rem; }
+.remove-set:disabled { cursor: not-allowed; opacity: 0.4; }
 .form-status.success { color: #83dba0; }
 .form-status.error { color: #ef858b; }
 
@@ -794,6 +826,14 @@ select {
   .custom-muscle-row { grid-template-columns: 1fr; }
   .set-table { margin-right: -2px; }
   .set-header, .set-row { min-width: 480px; }
+  .history-session-fields { grid-template-columns: 1fr; }
+  .history-exercise-header,
+  .history-actions { align-items: stretch; flex-direction: column; }
+  .history-add-exercise { flex-direction: column; }
+  .history-add-exercise select { min-width: 0; }
+  .history-exercise .set-header,
+  .history-set-row { min-width: 570px; }
+  .history-actions .form-status { text-align: left; }
 }
 
 @media (max-width: 1100px) {

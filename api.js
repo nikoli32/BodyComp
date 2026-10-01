@@ -14,6 +14,7 @@
       }
       throw new Error(body.error || `Request failed (${response.status}).`);
     }
+    if (response.status === 204) return null;
     return response.json();
   }
 
@@ -54,6 +55,10 @@
     });
   }
 
+  async function deleteWorkout(id) {
+    return request(`/api/workouts/${id}`, { method: "DELETE" });
+  }
+
   window.MuscleRecoveryApi = {
     apiBaseUrl,
     getRecovery,
@@ -63,6 +68,7 @@
     createWorkout,
     getWorkouts,
     updateWorkout,
+    deleteWorkout,
     getCurrentUser: () => request("/api/auth/me"),
     register: (account) => request("/api/auth/register", { method: "POST", body: JSON.stringify(account) }),
     login: (credentials) => request("/api/auth/login", { method: "POST", body: JSON.stringify(credentials) }),

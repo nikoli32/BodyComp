@@ -1,6 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateRecovery, deriveStrengthBaseline, recoveryDemandAt, relativeIntensity, setStimulus, stimulusToDemand } from "../dist/recovery.js";
+import { buildMuscleRecovery, calculateRecovery, deriveStrengthBaseline, estimatePersonalRecoveryHours, recoveryDemandAt, relativeIntensity, setStimulus, stimulusToDemand } from "../dist/recovery.js";
+
+function repeatedSets(intervalHours, count, weightKg = 80) {
+  return Array.from({ length: count }, (_, index) => ({
+    setId: String(index),
+    workoutId: String(index),
+    exerciseId: 1,
+    exerciseName: "Squat",
+    muscleSlug: "quadriceps",
+    muscleName: "Quadriceps",
+    role: "primary",
+    loadFactor: 1,
+    weightKg,
+    reps: 8,
+    rir: 2,
+    trainedAt: new Date(Date.UTC(2026, 0, 1) + index * intervalHours * 36e5),
+  }));
+}
 
 test("an untrained muscle is ready", () => {
   assert.deepEqual(calculateRecovery(null, 72, new Date("2026-08-27T12:00:00Z")), { status: "ready", recoveredAt: null });
@@ -45,4 +62,52 @@ test("demand decays with time and a new user fallback stays conservative", () =>
   assert.ok(recoveryDemandAt(80, new Date("2026-08-27T10:00:00Z"), 72, now) > recoveryDemandAt(80, new Date("2026-08-24T10:00:00Z"), 72, now));
   assert.equal(recoveryDemandAt(80, new Date("2026-08-20T10:00:00Z"), 72, now), 0);
   assert.ok(relativeIntensity({ weightKg: 40, reps: 10, rir: 0 }, null) < 1, "one first set must not be treated as a proven maximum");
+});
+
+test("personal recovery uses the muscle prior until enough repeat sessions exist", () => {
+  const estimate = estimatePersonalRecoveryHours("quadriceps", 72, repeatedSets(48, 3));
+  assert.equal(estimate.hours, 72);
+  assert.equal(estimate.sampleCount, 2);
+  assert.equal(estimate.learned, false);
+});
+
+test("personal recovery learns a bounded estimate from repeat performance intervals", () => {
+  const estimate = estimatePersonalRecoveryHours("quadriceps", 72, repeatedSets(48, 4));
+  assert.equal(estimate.sampleCount, 3);
+  assert.equal(estimate.learned, true);
+  assert.equal(estimate.hours, 63);
+});
+
+test("personal recovery estimates differ by user history and remain bounded", () => {
+  const shorterIntervals = estimatePersonalRecoveryHours("quadriceps", 72, repeatedSets(48, 4));
+  const longerIntervals = estimatePersonalRecoveryHours("quadriceps", 72, repeatedSets(84, 4));
+  const outlierIntervals = estimatePersonalRecoveryHours("quadriceps", 72, repeatedSets(300, 4));
+  assert.ok(shorterIntervals.hours < longerIntervals.hours);
+  assert.ok(outlierIntervals.hours <= 96);
+  assert.ok(outlierIntervals.hours >= 18);
+});
+
+test("personal recovery only learns from the requested muscle", () => {
+  const otherMuscle = repeatedSets(48, 4).map((set) => ({ ...set, muscleSlug: "glutes" }));
+  const estimate = estimatePersonalRecoveryHours("quadriceps", 60, otherMuscle);
+  assert.equal(estimate.hours, 60);
+  assert.equal(estimate.sampleCount, 0);
+});
+
+test("recovery output includes the personalized baseline and source evidence", () => {
+  const muscle = { slug: "quadriceps", name: "Quadriceps", description: "Front thigh", recoveryHours: 72, regions: [] };
+  const result = buildMuscleRecovery([muscle], repeatedSets(48, 4), new Date("2026-01-10T00:00:00Z"))[0];
+  assert.equal(result.recoveryBaselineHours, 63);
+  assert.equal(result.recoveryHistorySamples, 3);
+  assert.equal(result.recoveryEstimateLearned, true);
+});
+
+test("recovery output keeps distinct muscle priors for users without history", () => {
+  const muscles = [
+    { slug: "forearms", name: "Forearms", description: "Grip", recoveryHours: 36, regions: [] },
+    { slug: "glutes", name: "Glutes", description: "Hip extension", recoveryHours: 72, regions: [] },
+  ];
+  const result = buildMuscleRecovery(muscles, []);
+  assert.deepEqual(result.map((muscle) => muscle.recoveryBaselineHours), [36, 72]);
+  assert.ok(result.every((muscle) => !muscle.recoveryEstimateLearned));
 });

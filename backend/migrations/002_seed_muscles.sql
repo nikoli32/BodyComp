@@ -1,22 +1,22 @@
-insert into muscle_groups (slug, name, description, map_view) values
-  ('deltoids', 'Deltoids', 'Shoulder abduction and pressing control.', 'both'),
-  ('pectorals', 'Pectorals', 'Primary chest muscles for pressing and shoulder flexion.', 'front'),
-  ('biceps', 'Biceps', 'Front upper-arm flexors used in curls and pulling work.', 'front'),
-  ('forearms', 'Forearms', 'Grip and wrist control muscles.', 'front'),
-  ('rectus-abdominis', 'Rectus Abdominis', 'Central abdominal wall used for bracing.', 'front'),
-  ('obliques', 'Obliques', 'Side abdominal stabilizer muscles.', 'front'),
-  ('hip-flexors', 'Hip Flexors', 'Anterior hip muscles involved in knee drive.', 'front'),
-  ('adductors', 'Adductors', 'Inner thigh muscles.', 'front'),
-  ('quadriceps', 'Quadriceps', 'Front thigh muscles used for knee extension.', 'front'),
-  ('trapezius', 'Trapezius', 'Upper-back muscle used in shrugs and rows.', 'back'),
-  ('rear-deltoids', 'Rear Deltoids', 'Back shoulder muscles.', 'back'),
-  ('triceps', 'Triceps', 'Back upper-arm muscles used in presses.', 'back'),
-  ('rhomboids', 'Rhomboids', 'Muscles between the shoulder blades.', 'back'),
-  ('lats', 'Lats', 'Large back muscles used in pulling.', 'back'),
-  ('lower-back', 'Lower Back', 'Spinal support muscles.', 'back'),
-  ('glutes', 'Glutes', 'Hip extensor muscles.', 'back'),
-  ('hamstrings', 'Hamstrings', 'Back thigh muscles.', 'back'),
-  ('calves', 'Calves', 'Lower-leg muscles.', 'back')
+insert into muscle_groups (slug, name, description, default_recovery_hours, map_view) values
+  ('deltoids', 'Deltoids', 'Shoulder abduction and pressing control.', 48, 'both'),
+  ('pectorals', 'Pectorals', 'Primary chest muscles for pressing and shoulder flexion.', 72, 'front'),
+  ('biceps', 'Biceps', 'Front upper-arm flexors used in curls and pulling work.', 48, 'front'),
+  ('forearms', 'Forearms', 'Grip and wrist control muscles.', 36, 'front'),
+  ('rectus-abdominis', 'Rectus Abdominis', 'Central abdominal wall used for bracing.', 48, 'front'),
+  ('obliques', 'Obliques', 'Side abdominal stabilizer muscles.', 48, 'front'),
+  ('hip-flexors', 'Hip Flexors', 'Anterior hip muscles involved in knee drive.', 60, 'front'),
+  ('adductors', 'Adductors', 'Inner thigh muscles.', 60, 'front'),
+  ('quadriceps', 'Quadriceps', 'Front thigh muscles used for knee extension.', 72, 'front'),
+  ('trapezius', 'Trapezius', 'Upper-back muscle used in shrugs and rows.', 60, 'back'),
+  ('rear-deltoids', 'Rear Deltoids', 'Back shoulder muscles.', 48, 'back'),
+  ('triceps', 'Triceps', 'Back upper-arm muscles used in presses.', 48, 'back'),
+  ('rhomboids', 'Rhomboids', 'Muscles between the shoulder blades.', 60, 'back'),
+  ('lats', 'Lats', 'Large back muscles used in pulling.', 60, 'back'),
+  ('lower-back', 'Lower Back', 'Spinal support muscles.', 72, 'back'),
+  ('glutes', 'Glutes', 'Hip extensor muscles.', 72, 'back'),
+  ('hamstrings', 'Hamstrings', 'Back thigh muscles.', 72, 'back'),
+  ('calves', 'Calves', 'Lower-leg muscles.', 48, 'back')
 on conflict (slug) do nothing;
 
 insert into muscle_regions (muscle_group_id, region_key, side, map_view)

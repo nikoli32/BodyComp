@@ -25,6 +25,17 @@ test("workout validation rejects a set without reps or duration", () => {
   assert.equal(workoutInput.safeParse({ ...validWorkout, exercises: [{ exerciseId: 1, sets: [{ weightKg: 60 }] }] }).success, false);
 });
 
+test("workout validation accepts exercise notes and timed sets", () => {
+  assert.equal(workoutInput.safeParse({
+    ...validWorkout,
+    exercises: [{ exerciseId: 1, notes: "Tempo work", sets: [{ durationSeconds: 45, completedAt: "2026-08-27T10:30:00.000Z" }] }],
+  }).success, true);
+});
+
+test("workout validation rejects exercises without sets", () => {
+  assert.equal(workoutInput.safeParse({ ...validWorkout, exercises: [{ exerciseId: 1, sets: [] }] }).success, false);
+});
+
 test("workout validation rejects an inverted time range", () => {
   assert.equal(workoutInput.safeParse({ ...validWorkout, startedAt: validWorkout.finishedAt, finishedAt: validWorkout.startedAt }).success, false);
 });

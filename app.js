@@ -441,7 +441,13 @@ function selectMuscle(item) {
     const demand = Math.round(Number(recovery.recoveryDemand) || 0);
     const exercises = recovery.contributingExercises?.join(", ") || "recent training";
     const readyAt = recovery.estimatedReadyAt ? new Date(recovery.estimatedReadyAt).toLocaleString() : "now";
-    muscleDescription.textContent = `${demand}% estimated recovery demand (${recovery.status === "ready" ? "ready to train" : "recovering"}). Last trained ${new Date(recovery.lastTrainedAt).toLocaleString()} with ${recovery.totalSets} set${recovery.totalSets === 1 ? "" : "s"} of ${exercises}${recovery.averageRir === null ? "" : ` at ${recovery.averageRir} average RIR`}. Estimated ready: ${readyAt}. ${item.description}`;
+    const recoveryHours = Number(recovery.recoveryBaselineHours ?? recovery.recoveryHours);
+    const estimate = Number.isFinite(recoveryHours)
+      ? recovery.recoveryEstimateLearned
+        ? `Personalized recovery estimate: ${Math.round(recoveryHours)} hours from ${recovery.recoveryHistorySamples} repeat-performance observations.`
+        : `Starting recovery estimate: ${Math.round(recoveryHours)} hours; repeat performance will personalize it over time.`
+      : "";
+    muscleDescription.textContent = `${demand}% estimated recovery demand (${recovery.status === "ready" ? "ready to train" : "recovering"}). ${estimate} Last trained ${new Date(recovery.lastTrainedAt).toLocaleString()} with ${recovery.totalSets} set${recovery.totalSets === 1 ? "" : "s"} of ${exercises}${recovery.averageRir === null ? "" : ` at ${recovery.averageRir} average RIR`}. Estimated ready: ${readyAt}. ${item.description}`;
   }
 
   document.querySelectorAll(".muscle-chip").forEach((chip) => {

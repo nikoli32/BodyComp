@@ -191,6 +191,7 @@ app.get("/api/workouts", async (req, res, next) => {
           'id', we.id,
           'exerciseId', e.id,
           'name', e.name,
+          'notes', we.notes,
           'sets', coalesce(workout_set_data.sets, '[]')
         ) order by we.position)
           filter (where we.id is not null), '[]') as exercises
@@ -203,7 +204,9 @@ app.get("/api/workouts", async (req, res, next) => {
           'setNumber', ws.set_number,
           'weightKg', ws.weight_kg,
           'reps', ws.reps,
-          'rir', ws.rir
+          'durationSeconds', ws.duration_seconds,
+          'rir', ws.rir,
+          'completedAt', ws.completed_at
         ) order by ws.set_number) as sets
         from workout_sets ws
         where ws.workout_exercise_id = we.id
@@ -243,6 +246,29 @@ app.put("/api/workouts/:workoutId", async (req, res, next) => {
         }
         await client.query("commit");
         res.json({ id: req.params.workoutId });
+    }
+    catch (error) {
+        await client.query("rollback");
+        next(error);
+    }
+    finally {
+        client.release();
+    }
+});
+app.delete("/api/workouts/:workoutId", async (req, res, next) => {
+    const userId = await requireUser(req, res);
+    if (!userId)
+        return;
+    const client = await pool.connect();
+    try {
+        await client.query("begin");
+        const deleted = await client.query("delete from workouts where id = $1 and user_id = $2 returning id", [req.params.workoutId, userId]);
+        if (!deleted.rowCount) {
+            await client.query("rollback");
+            return res.status(404).json({ error: "Workout not found." });
+        }
+        await client.query("commit");
+        res.status(204).end();
     }
     catch (error) {
         await client.query("rollback");

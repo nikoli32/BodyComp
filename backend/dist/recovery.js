@@ -1,5 +1,6 @@
 // Product tuning values, deliberately centralised and independent of body weight.
 export const RECOVERY_MODEL = { defaultRir: 2, readyDemand: 20, minimumRecoveryHours: 18, maximumRecoveryHours: 96, baselineSampleTarget: 5 };
+const RECOVERY_LEARNING = { minimumTransitions: 3, priorWeight: 5, maximumEvidenceWeight: 10 };
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 const median = (values) => {
     const sorted = [...values].sort((a, b) => a - b);
@@ -50,6 +51,53 @@ export function calculateRecovery(lastTrainedAt, recoveryHours, now = new Date()
     const recoveredAt = new Date(lastTrainedAt.getTime() + recoveryHours * 36e5);
     return { status: now < recoveredAt ? "needs_recovery" : "ready", recoveredAt };
 }
+export function estimatePersonalRecoveryHours(muscleSlug, defaultRecoveryHours, trainingSets) {
+    const exercises = new Map();
+    for (const set of trainingSets) {
+        if (set.muscleSlug !== muscleSlug)
+            continue;
+        const performance = estimateSetStrength(set);
+        if (performance === null)
+            continue;
+        const exerciseKey = String(set.exerciseId);
+        const sessions = exercises.get(exerciseKey) ?? new Map();
+        const session = sessions.get(set.workoutId) ?? { trainedAt: set.trainedAt, performances: [] };
+        if (set.trainedAt > session.trainedAt)
+            session.trainedAt = set.trainedAt;
+        session.performances.push(performance);
+        sessions.set(set.workoutId, session);
+        exercises.set(exerciseKey, sessions);
+    }
+    const observations = [];
+    for (const sessions of exercises.values()) {
+        const ordered = [...sessions.values()].sort((a, b) => a.trainedAt.getTime() - b.trainedAt.getTime());
+        for (let index = 1; index < ordered.length; index += 1) {
+            const previous = ordered[index - 1];
+            const current = ordered[index];
+            const intervalHours = (current.trainedAt.getTime() - previous.trainedAt.getTime()) / 36e5;
+            const previousPerformance = median(previous.performances);
+            const currentPerformance = median(current.performances);
+            if (intervalHours <= 0 || previousPerformance <= 0)
+                continue;
+            const performanceRatio = currentPerformance / previousPerformance;
+            const adjustment = clamp(1 - (performanceRatio - 1) * 1.5, 0.75, 1.35);
+            observations.push(clamp(intervalHours * adjustment, RECOVERY_MODEL.minimumRecoveryHours, RECOVERY_MODEL.maximumRecoveryHours));
+        }
+    }
+    const prior = clamp(defaultRecoveryHours, RECOVERY_MODEL.minimumRecoveryHours, RECOVERY_MODEL.maximumRecoveryHours);
+    if (observations.length < RECOVERY_LEARNING.minimumTransitions) {
+        return { hours: prior, sampleCount: observations.length, learned: false };
+    }
+    const evidenceWeight = Math.min(observations.length, RECOVERY_LEARNING.maximumEvidenceWeight);
+    const empirical = median(observations);
+    const hours = (prior * RECOVERY_LEARNING.priorWeight + empirical * evidenceWeight)
+        / (RECOVERY_LEARNING.priorWeight + evidenceWeight);
+    return {
+        hours: clamp(hours, RECOVERY_MODEL.minimumRecoveryHours, RECOVERY_MODEL.maximumRecoveryHours),
+        sampleCount: observations.length,
+        learned: true,
+    };
+}
 export function buildMuscleRecovery(muscles, trainingSets, now = new Date()) {
     // A set is only compared with earlier performance for that exact exercise.
     // This stops the current workout (or a future PR) from rewriting its own score.
@@ -61,6 +109,7 @@ export function buildMuscleRecovery(muscles, trainingSets, now = new Date()) {
         baselines.set(set.setId, deriveStrengthBaseline(priorSets));
     }
     return muscles.map((muscle) => {
+        const recoveryEstimate = estimatePersonalRecoveryHours(muscle.slug, muscle.recoveryHours, trainingSets);
         const sessions = new Map();
         for (const set of trainingSets.filter((candidate) => candidate.muscleSlug === muscle.slug)) {
             const baseline = baselines.get(set.setId);
@@ -73,7 +122,7 @@ export function buildMuscleRecovery(muscles, trainingSets, now = new Date()) {
         }
         const details = [...sessions.values()].map((session) => {
             const demand = stimulusToDemand(session.stimulus);
-            const recoveryHours = demandRecoveryHours(demand, muscle.recoveryHours);
+            const recoveryHours = demandRecoveryHours(demand, recoveryEstimate.hours);
             return { ...session, demand, recoveryHours, remainingDemand: recoveryDemandAt(demand, session.trainedAt, recoveryHours, now) };
         });
         const recoveryDemand = 100 * (1 - details.reduce((remaining, session) => remaining * (1 - session.remainingDemand / 100), 1));
@@ -83,7 +132,8 @@ export function buildMuscleRecovery(muscles, trainingSets, now = new Date()) {
         const averageRir = recentSets.length ? recentSets.reduce((sum, set) => sum + (set.rir ?? RECOVERY_MODEL.defaultRir), 0) / recentSets.length : null;
         return {
             ...muscle, lastTrainedAt: latest?.trainedAt.toISOString() ?? null, recoveredAt: readyAt?.toISOString() ?? null, estimatedReadyAt: readyAt?.toISOString() ?? null,
-            recoveryHours: latest?.recoveryHours ?? muscle.recoveryHours, recoveryDemand: Number(recoveryDemand.toFixed(1)), recoveryProgress: Number((1 - recoveryDemand / 100).toFixed(3)),
+            recoveryBaselineHours: recoveryEstimate.hours, recoveryHistorySamples: recoveryEstimate.sampleCount, recoveryEstimateLearned: recoveryEstimate.learned,
+            recoveryHours: latest?.recoveryHours ?? recoveryEstimate.hours, recoveryDemand: Number(recoveryDemand.toFixed(1)), recoveryProgress: Number((1 - recoveryDemand / 100).toFixed(3)),
             status: recoveryDemand <= RECOVERY_MODEL.readyDemand ? "ready" : "needs_recovery", tension: latest ? Number((latest.demand / 100).toFixed(3)) : 0,
             trainingRole: recentSets.some((set) => set.role === "primary") ? "primary" : latest ? "secondary" : null, totalSets: recentSets.length,
             totalVolumeKg: Number(recentSets.reduce((sum, set) => sum + (set.weightKg ?? 0) * (set.reps ?? 0), 0).toFixed(2)), relativeIntensity: latest ? Number((latest.intensities.reduce((sum, value) => sum + value, 0) / latest.intensities.length).toFixed(2)) : null,
