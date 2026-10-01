@@ -119,7 +119,8 @@ app.get("/api/exercises", async (req, res, next) => {
   const userId = await requireUser(req, res);
   if (!userId) return;
   try {
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
       select e.id, e.name, e.instructions,
         coalesce(json_agg(json_build_object('slug', mg.slug, 'name', mg.name, 'role', em.role, 'loadFactor', em.load_factor) order by em.role, mg.name)
           filter (where mg.id is not null), '[]') as muscles
@@ -128,7 +129,9 @@ app.get("/api/exercises", async (req, res, next) => {
       left join muscle_groups mg on mg.id = em.muscle_group_id
       where e.created_by_user_id is null or e.created_by_user_id = $1
       group by e.id order by e.name
-    `, [userId]);
+    `,
+      [userId],
+    );
     res.json(result.rows);
   } catch (error) {
     next(error);
@@ -139,7 +142,8 @@ app.get("/api/custom-exercises", async (req, res, next) => {
   const userId = await requireUser(req, res);
   if (!userId) return;
   try {
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
       select e.id, e.name, e.instructions,
         coalesce(json_agg(json_build_object('slug', mg.slug, 'name', mg.name, 'role', em.role, 'loadFactor', em.load_factor) order by em.role, mg.name)
           filter (where mg.id is not null), '[]') as muscles
@@ -148,7 +152,9 @@ app.get("/api/custom-exercises", async (req, res, next) => {
       left join muscle_groups mg on mg.id = em.muscle_group_id
       where e.created_by_user_id = $1
       group by e.id order by e.name
-    `, [userId]);
+    `,
+      [userId],
+    );
     res.json(result.rows);
   } catch (error) {
     next(error);
@@ -173,12 +179,10 @@ app.get("/api/muscle-groups", async (req, res, next) => {
 app.post("/api/exercises", async (req, res, next) => {
   const parsed = customExerciseInput.safeParse(req.body);
   if (!parsed.success)
-    return res
-      .status(400)
-      .json({
-        error: "Invalid exercise payload.",
-        details: parsed.error.flatten(),
-      });
+    return res.status(400).json({
+      error: "Invalid exercise payload.",
+      details: parsed.error.flatten(),
+    });
   const userId = await requireUser(req, res);
   if (!userId) return;
   const input = parsed.data;
@@ -261,7 +265,9 @@ app.put("/api/custom-exercises/:exerciseId", async (req, res, next) => {
       );
       if (!validGroup.rowCount) {
         await client.query("rollback");
-        return res.status(400).json({ error: "A selected muscle group does not exist." });
+        return res
+          .status(400)
+          .json({ error: "A selected muscle group does not exist." });
       }
     }
 
@@ -281,7 +287,8 @@ app.put("/api/custom-exercises/:exerciseId", async (req, res, next) => {
     }
     await client.query("commit");
 
-    const updatedExercise = await pool.query(`
+    const updatedExercise = await pool.query(
+      `
       select e.id, e.name, e.instructions,
         coalesce(json_agg(json_build_object('slug', mg.slug, 'name', mg.name, 'role', em.role, 'loadFactor', em.load_factor) order by em.role, mg.name)
           filter (where mg.id is not null), '[]') as muscles
@@ -290,7 +297,9 @@ app.put("/api/custom-exercises/:exerciseId", async (req, res, next) => {
       left join muscle_groups mg on mg.id = em.muscle_group_id
       where e.id = $1
       group by e.id
-    `, [exercise.rows[0].id]);
+    `,
+      [exercise.rows[0].id],
+    );
     res.json(updatedExercise.rows[0]);
   } catch (error) {
     await client.query("rollback");
@@ -303,16 +312,14 @@ app.put("/api/custom-exercises/:exerciseId", async (req, res, next) => {
 app.post("/api/workouts", async (req, res, next) => {
   const parsed = workoutInput.safeParse(req.body);
   if (!parsed.success)
-    return res
-      .status(400)
-      .json({
-        error: "Invalid workout payload.",
-        details: parsed.error.flatten(),
-      });
+    return res.status(400).json({
+      error: "Invalid workout payload.",
+      details: parsed.error.flatten(),
+    });
   const userId = await requireUser(req, res);
   if (!userId) return;
-    const input = parsed.data;
-    const client = await pool.connect();
+  const input = parsed.data;
+  const client = await pool.connect();
   try {
     await client.query("begin");
     const user = await client.query("select id from users where id = $1", [
@@ -417,12 +424,10 @@ app.get("/api/workouts", async (req, res, next) => {
 app.put("/api/workouts/:workoutId", async (req, res, next) => {
   const parsed = workoutInput.safeParse(req.body);
   if (!parsed.success)
-    return res
-      .status(400)
-      .json({
-        error: "Invalid workout payload.",
-        details: parsed.error.flatten(),
-      });
+    return res.status(400).json({
+      error: "Invalid workout payload.",
+      details: parsed.error.flatten(),
+    });
   const userId = await requireUser(req, res);
   if (!userId) return;
   const input = parsed.data;

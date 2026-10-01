@@ -97,11 +97,15 @@ test("custom exercise validation rejects duplicate muscle assignments", () => {
 
 test("custom exercise muscle updates accept assignments without an exercise name", () => {
   assert.equal(
-    customExerciseMusclesInput.safeParse({ muscles: validCustomExercise.muscles }).success,
+    customExerciseMusclesInput.safeParse({
+      muscles: validCustomExercise.muscles,
+    }).success,
     true,
   );
   assert.equal(
-    customExerciseMusclesInput.safeParse({ muscles: [{ muscleGroupId: 1, role: "secondary" }] }).success,
+    customExerciseMusclesInput.safeParse({
+      muscles: [{ muscleGroupId: 1, role: "secondary" }],
+    }).success,
     false,
   );
 });

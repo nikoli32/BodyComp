@@ -20,9 +20,13 @@
     muscleGroups.forEach((group) => {
       muscleSelect.add(new Option(group.name, String(group.id)));
     });
-    muscleSelect.value = assignment.muscleGroupId ? String(assignment.muscleGroupId) : "";
+    muscleSelect.value = assignment.muscleGroupId
+      ? String(assignment.muscleGroupId)
+      : "";
     muscleSelect.addEventListener("change", () => {
-      assignment.muscleGroupId = muscleSelect.value ? Number(muscleSelect.value) : "";
+      assignment.muscleGroupId = muscleSelect.value
+        ? Number(muscleSelect.value)
+        : "";
     });
     muscleLabel.append(muscleSelect);
 
@@ -86,13 +90,16 @@
     exerciseStatus.setAttribute("role", "status");
 
     let assignments = exercise.muscles.map((muscle) => ({
-      muscleGroupId: muscleGroups.find((group) => group.slug === muscle.slug)?.id ?? "",
+      muscleGroupId:
+        muscleGroups.find((group) => group.slug === muscle.slug)?.id ?? "",
       role: muscle.role,
     }));
     const renderRows = () => {
-      rows.replaceChildren(...assignments.map((assignment) =>
-        createAssignmentRow(assignment, assignments, renderRows),
-      ));
+      rows.replaceChildren(
+        ...assignments.map((assignment) =>
+          createAssignmentRow(assignment, assignments, renderRows),
+        ),
+      );
     };
     addPrimary.addEventListener("click", () => {
       assignments.push({ muscleGroupId: "", role: "primary" });
@@ -120,35 +127,49 @@
         return;
       }
       if (!muscles.some((muscle) => muscle.role === "primary")) {
-        exerciseStatus.textContent = "Choose at least one primary muscle target.";
+        exerciseStatus.textContent =
+          "Choose at least one primary muscle target.";
         exerciseStatus.className = "form-status error";
         return;
       }
-      if (new Set(muscles.map((muscle) => muscle.muscleGroupId)).size !== muscles.length) {
-        exerciseStatus.textContent = "Each muscle group can only be assigned once.";
+      if (
+        new Set(muscles.map((muscle) => muscle.muscleGroupId)).size !==
+        muscles.length
+      ) {
+        exerciseStatus.textContent =
+          "Each muscle group can only be assigned once.";
         exerciseStatus.className = "form-status error";
         return;
       }
 
       const controls = form.querySelectorAll("button, select");
-      controls.forEach((control) => { control.disabled = true; });
+      controls.forEach((control) => {
+        control.disabled = true;
+      });
       exerciseStatus.textContent = "Saving changes...";
       exerciseStatus.className = "form-status";
       try {
-        const updated = await window.MuscleRecoveryApi.updateCustomExercise(exercise.id, muscles);
+        const updated = await window.MuscleRecoveryApi.updateCustomExercise(
+          exercise.id,
+          muscles,
+        );
         exercise.muscles = updated.muscles;
         assignments = updated.muscles.map((muscle) => ({
-          muscleGroupId: muscleGroups.find((group) => group.slug === muscle.slug)?.id ?? "",
+          muscleGroupId:
+            muscleGroups.find((group) => group.slug === muscle.slug)?.id ?? "",
           role: muscle.role,
         }));
         renderRows();
         exerciseStatus.textContent = "Muscle groups saved.";
         exerciseStatus.className = "form-status success";
       } catch (error) {
-        exerciseStatus.textContent = error.message || "Unable to save muscle groups.";
+        exerciseStatus.textContent =
+          error.message || "Unable to save muscle groups.";
         exerciseStatus.className = "form-status error";
       } finally {
-        controls.forEach((control) => { control.disabled = false; });
+        controls.forEach((control) => {
+          control.disabled = false;
+        });
         form.querySelectorAll(".remove-muscle-button").forEach((button) => {
           button.disabled = assignments.length <= 1;
         });
@@ -169,7 +190,9 @@
       ]);
       muscleGroups = groups;
       if (!exercises.length) {
-        setStatus("No custom workouts yet. Create one while logging a workout.");
+        setStatus(
+          "No custom workouts yet. Create one while logging a workout.",
+        );
         return;
       }
       setStatus("");
