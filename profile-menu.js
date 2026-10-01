@@ -64,7 +64,10 @@
   profileMenuButton.addEventListener("click", (event) => {
     event.stopPropagation();
     profileDropdown.hidden = !profileDropdown.hidden;
-    profileMenuButton.setAttribute("aria-expanded", String(!profileDropdown.hidden));
+    profileMenuButton.setAttribute(
+      "aria-expanded",
+      String(!profileDropdown.hidden),
+    );
   });
 
   document.addEventListener("click", (event) => {
