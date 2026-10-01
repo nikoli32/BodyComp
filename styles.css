@@ -71,6 +71,15 @@ button {
   border-radius: 8px;
 }
 
+.workout-page-titlebar {
+  min-height: 56px;
+  padding: 8px 18px;
+}
+
+.workout-page-titlebar h1 {
+  font-size: 1.8rem;
+}
+
 .eyebrow,
 .canvas-toolbar span,
 .stat-grid span,

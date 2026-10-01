@@ -127,7 +127,8 @@ app.get("/api/exercises", async (req, res, next) => {
       from exercises e
       left join exercise_muscles em on em.exercise_id = e.id
       left join muscle_groups mg on mg.id = em.muscle_group_id
-      where e.created_by_user_id is null or e.created_by_user_id = $1
+      where e.archived_at is null
+        and (e.created_by_user_id is null or e.created_by_user_id = $1)
       group by e.id order by e.name
     `,
       [userId],
@@ -150,7 +151,7 @@ app.get("/api/custom-exercises", async (req, res, next) => {
       from exercises e
       left join exercise_muscles em on em.exercise_id = e.id
       left join muscle_groups mg on mg.id = em.muscle_group_id
-      where e.created_by_user_id = $1
+      where e.created_by_user_id = $1 and e.archived_at is null
       group by e.id order by e.name
     `,
       [userId],
@@ -250,7 +251,7 @@ app.put("/api/custom-exercises/:exerciseId", async (req, res, next) => {
   try {
     await client.query("begin");
     const exercise = await client.query<{ id: string; name: string }>(
-      "select id, name from exercises where id = $1 and created_by_user_id = $2 for update",
+      "select id, name from exercises where id = $1 and created_by_user_id = $2 and archived_at is null for update",
       [req.params.exerciseId, userId],
     );
     if (!exercise.rowCount) {
@@ -306,6 +307,23 @@ app.put("/api/custom-exercises/:exerciseId", async (req, res, next) => {
     next(error);
   } finally {
     client.release();
+  }
+});
+
+app.delete("/api/custom-exercises/:exerciseId", async (req, res, next) => {
+  const userId = await requireUser(req, res);
+  if (!userId) return;
+  try {
+    const deleted = await pool.query(
+      "update exercises set archived_at = now() where id = $1 and created_by_user_id = $2 and archived_at is null returning id",
+      [req.params.exerciseId, userId],
+    );
+    if (!deleted.rowCount) {
+      return res.status(404).json({ error: "Custom workout not found." });
+    }
+    res.status(204).end();
+  } catch (error) {
+    next(error);
   }
 });
 

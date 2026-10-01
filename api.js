@@ -45,6 +45,10 @@
     });
   }
 
+  async function deleteCustomExercise(id) {
+    return request(`/api/custom-exercises/${id}`, { method: "DELETE" });
+  }
+
   async function getMuscleGroups() {
     return request("/api/muscle-groups");
   }
@@ -84,6 +88,7 @@
     getExercises,
     getCustomExercises,
     updateCustomExercise,
+    deleteCustomExercise,
     getMuscleGroups,
     createExercise,
     createWorkout,

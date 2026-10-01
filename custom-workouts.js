@@ -65,7 +65,29 @@
     heading.className = "custom-exercise-header";
     const title = document.createElement("h3");
     title.textContent = exercise.name;
-    heading.append(title);
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "button button-secondary";
+    deleteButton.type = "button";
+    deleteButton.textContent = "Delete workout";
+    deleteButton.addEventListener("click", async () => {
+      if (!window.confirm(`Delete ${exercise.name} from your custom workouts?`)) {
+        return;
+      }
+      deleteButton.disabled = true;
+      try {
+        await window.MuscleRecoveryApi.deleteCustomExercise(exercise.id);
+        card.remove();
+        if (!workoutList.children.length) {
+          setStatus("No custom workouts yet. Create one while logging a workout.");
+        }
+      } catch (error) {
+        exerciseStatus.textContent =
+          error.message || "Unable to delete custom workout.";
+        exerciseStatus.className = "form-status error";
+        deleteButton.disabled = false;
+      }
+    });
+    heading.append(title, deleteButton);
 
     const form = document.createElement("form");
     form.className = "custom-workout-editor";
