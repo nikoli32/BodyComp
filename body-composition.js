@@ -36,11 +36,19 @@
   function updatePreview() {
     const weight = Number(weightInput.value);
     const bodyFatPercent = Number(bodyFatInput.value);
-    if (!weightInput.value || !bodyFatInput.value || !Number.isFinite(weight) || !Number.isFinite(bodyFatPercent)) {
+    if (
+      !weightInput.value ||
+      !bodyFatInput.value ||
+      !Number.isFinite(weight) ||
+      !Number.isFinite(bodyFatPercent)
+    ) {
       preview.textContent = "Enter weight and body fat to calculate lean mass.";
       return;
     }
-    const leanKg = leanMassKg(weightToKg(weight, selectedUnit()), bodyFatPercent);
+    const leanKg = leanMassKg(
+      weightToKg(weight, selectedUnit()),
+      bodyFatPercent,
+    );
     preview.textContent = `Calculated lean mass: ${weightFromKg(leanKg, selectedUnit()).toFixed(2)} ${selectedUnit()}`;
   }
 
@@ -60,11 +68,14 @@
       const details = document.createElement("div");
       details.className = "measurement-row-details";
       const date = document.createElement("h3");
-      date.textContent = new Date(measurement.recordedAt).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
+      date.textContent = new Date(measurement.recordedAt).toLocaleDateString(
+        undefined,
+        {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        },
+      );
       const values = document.createElement("p");
       values.textContent = `${weightFromKg(measurement.weightKg, selectedUnit()).toFixed(2)} ${selectedUnit()} weight · ${Number(measurement.bodyFatPercent).toFixed(1)}% body fat · ${weightFromKg(measurement.leanMassKg, selectedUnit()).toFixed(2)} ${selectedUnit()} lean mass`;
       details.append(date, values);
@@ -80,7 +91,9 @@
       deleteButton.className = "text-button danger-text";
       deleteButton.type = "button";
       deleteButton.textContent = "Delete";
-      deleteButton.addEventListener("click", () => deleteMeasurement(measurement));
+      deleteButton.addEventListener("click", () =>
+        deleteMeasurement(measurement),
+      );
       actions.append(editButton, deleteButton);
       row.append(details, actions);
       list.append(row);
@@ -103,7 +116,10 @@
     submitButton.textContent = "Save changes";
     cancelEditButton.hidden = false;
     dateInput.value = localDateValue(new Date(measurement.recordedAt));
-    weightInput.value = weightFromKg(measurement.weightKg, selectedUnit()).toFixed(2);
+    weightInput.value = weightFromKg(
+      measurement.weightKg,
+      selectedUnit(),
+    ).toFixed(2);
     bodyFatInput.value = Number(measurement.bodyFatPercent).toFixed(1);
     setStatus("");
     updatePreview();
@@ -124,7 +140,9 @@
   async function deleteMeasurement(measurement) {
     if (!window.confirm("Delete this measurement?")) return;
     try {
-      await window.MuscleRecoveryApi.deleteBodyweightMeasurement(measurement.id);
+      await window.MuscleRecoveryApi.deleteBodyweightMeasurement(
+        measurement.id,
+      );
       if (editingId === measurement.id) resetForm();
       setStatus("Measurement deleted.", "success");
       await loadMeasurements();
@@ -142,7 +160,10 @@
     };
     try {
       if (editingId) {
-        await window.MuscleRecoveryApi.updateBodyweightMeasurement(editingId, payload);
+        await window.MuscleRecoveryApi.updateBodyweightMeasurement(
+          editingId,
+          payload,
+        );
         setStatus("Measurement updated.", "success");
       } else {
         await window.MuscleRecoveryApi.createBodyweightMeasurement(payload);
@@ -158,9 +179,13 @@
   function changeUnit(nextUnit) {
     const oldUnit = selectedUnit();
     const currentWeight = Number(weightInput.value);
-    const hasWeight = Boolean(weightInput.value) && Number.isFinite(currentWeight);
+    const hasWeight =
+      Boolean(weightInput.value) && Number.isFinite(currentWeight);
     if (hasWeight) {
-      weightInput.value = weightFromKg(weightToKg(currentWeight, oldUnit), nextUnit).toFixed(2);
+      weightInput.value = weightFromKg(
+        weightToKg(currentWeight, oldUnit),
+        nextUnit,
+      ).toFixed(2);
     }
     currentUnit = nextUnit;
     unitInput.value = nextUnit;
@@ -171,7 +196,9 @@
   }
 
   unitInput.addEventListener("change", () => changeUnit(unitInput.value));
-  historyUnitInput.addEventListener("change", () => changeUnit(historyUnitInput.value));
+  historyUnitInput.addEventListener("change", () =>
+    changeUnit(historyUnitInput.value),
+  );
   weightInput.addEventListener("input", updatePreview);
   bodyFatInput.addEventListener("input", updatePreview);
   cancelEditButton.addEventListener("click", resetForm);

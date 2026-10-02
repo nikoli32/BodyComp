@@ -42,7 +42,8 @@ function bodyweightResponse(row: BodyweightRow) {
   return {
     ...row,
     recordedAt: row.recordedAt.toISOString(),
-    leanMassKg: Math.round(row.weightKg * (1 - row.bodyFatPercent / 100) * 100) / 100,
+    leanMassKg:
+      Math.round(row.weightKg * (1 - row.bodyFatPercent / 100) * 100) / 100,
   };
 }
 

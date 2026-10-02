@@ -478,7 +478,8 @@ async function loadComposition() {
   const weight = document.querySelector("#compositionWeight");
   const leanMass = document.querySelector("#compositionLeanMass");
   try {
-    const measurements = await window.MuscleRecoveryApi.getBodyweightMeasurements();
+    const measurements =
+      await window.MuscleRecoveryApi.getBodyweightMeasurements();
     const latest = measurements[0];
     if (!latest) {
       bodyFat.textContent = "—";

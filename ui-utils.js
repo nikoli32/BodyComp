@@ -4,7 +4,9 @@
     if (direction === "first") return 0;
     if (direction === "last") return length - 1;
     if (currentIndex < 0) return direction === "previous" ? length - 1 : 0;
-    return direction === "previous" ? (currentIndex - 1 + length) % length : (currentIndex + 1) % length;
+    return direction === "previous"
+      ? (currentIndex - 1 + length) % length
+      : (currentIndex + 1) % length;
   }
 
   function recoveryLabel(status) {

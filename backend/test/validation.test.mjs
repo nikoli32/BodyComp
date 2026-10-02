@@ -133,7 +133,10 @@ test("account validation requires a strong-enough password", () => {
 });
 
 test("bodyweight validation accepts complete measurements", () => {
-  assert.equal(bodyweightInput.safeParse(validBodyweightMeasurement).success, true);
+  assert.equal(
+    bodyweightInput.safeParse(validBodyweightMeasurement).success,
+    true,
+  );
 });
 
 test("bodyweight validation rejects missing, nonpositive, or out-of-range values", () => {
