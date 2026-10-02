@@ -13,7 +13,29 @@
     return "recovery status loading";
   }
 
-  const api = { nextMuscleIndex, recoveryLabel };
+  const poundsPerKilogram = 2.20462262185;
+
+  function leanMassKg(weightKg, bodyFatPercent) {
+    return Math.round(weightKg * (1 - bodyFatPercent / 100) * 100) / 100;
+  }
+
+  function weightToKg(weight, unit) {
+    const weightKg = unit === "lb" ? weight / poundsPerKilogram : weight;
+    return Math.round(weightKg * 100) / 100;
+  }
+
+  function weightFromKg(weightKg, unit) {
+    const weight = unit === "lb" ? weightKg * poundsPerKilogram : weightKg;
+    return Math.round(weight * 100) / 100;
+  }
+
+  const api = {
+    nextMuscleIndex,
+    recoveryLabel,
+    leanMassKg,
+    weightToKg,
+    weightFromKg,
+  };
   if (typeof module !== "undefined") module.exports = api;
   global.MuscleMapUtils = api;
 })(typeof window === "undefined" ? globalThis : window);

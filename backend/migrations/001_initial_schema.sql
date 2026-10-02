@@ -48,6 +48,15 @@ create table if not exists workouts (
   check (finished_at is null or finished_at >= started_at)
 );
 
+create table if not exists bodyweight_info (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  recorded_at timestamptz not null,
+  weight_kg numeric(7,2) check (weight_kg >= 0),
+  body_fat_percent numeric(5,2) check (body_fat_percent >= 0 and body_fat_percent <= 100),
+  unique (user_id, recorded_at)
+);
+
 create table if not exists workout_exercises (
   id uuid primary key default gen_random_uuid(),
   workout_id uuid not null references workouts(id) on delete cascade,

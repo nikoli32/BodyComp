@@ -30,6 +30,28 @@
     return request("/api/muscles/recovery");
   }
 
+  async function getBodyweightMeasurements() {
+    return request("/api/bodyweight");
+  }
+
+  async function createBodyweightMeasurement(measurement) {
+    return request("/api/bodyweight", {
+      method: "POST",
+      body: JSON.stringify(measurement),
+    });
+  }
+
+  async function updateBodyweightMeasurement(id, measurement) {
+    return request(`/api/bodyweight/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(measurement),
+    });
+  }
+
+  async function deleteBodyweightMeasurement(id) {
+    return request(`/api/bodyweight/${id}`, { method: "DELETE" });
+  }
+
   async function getExercises() {
     return request("/api/exercises");
   }
@@ -85,6 +107,10 @@
   window.MuscleRecoveryApi = {
     apiBaseUrl,
     getRecovery,
+    getBodyweightMeasurements,
+    createBodyweightMeasurement,
+    updateBodyweightMeasurement,
+    deleteBodyweightMeasurement,
     getExercises,
     getCustomExercises,
     updateCustomExercise,

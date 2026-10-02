@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   accountInput,
+  bodyweightInput,
   customExerciseInput,
   customExerciseMusclesInput,
   workoutInput,
@@ -20,6 +21,12 @@ const validCustomExercise = {
     { muscleGroupId: 3, role: "secondary" },
     { muscleGroupId: 4, role: "secondary" },
   ],
+};
+
+const validBodyweightMeasurement = {
+  recordedAt: "2026-08-27T10:00:00.000Z",
+  weightKg: 80,
+  bodyFatPercent: 20,
 };
 
 test("workout validation accepts a complete set", () => {
@@ -123,4 +130,20 @@ test("account validation requires a strong-enough password", () => {
     }).success,
     true,
   );
+});
+
+test("bodyweight validation accepts complete measurements", () => {
+  assert.equal(bodyweightInput.safeParse(validBodyweightMeasurement).success, true);
+});
+
+test("bodyweight validation rejects missing, nonpositive, or out-of-range values", () => {
+  for (const measurement of [
+    { ...validBodyweightMeasurement, weightKg: 0 },
+    { ...validBodyweightMeasurement, weightKg: undefined },
+    { ...validBodyweightMeasurement, bodyFatPercent: -0.1 },
+    { ...validBodyweightMeasurement, bodyFatPercent: 100.1 },
+    { ...validBodyweightMeasurement, bodyFatPercent: undefined },
+  ]) {
+    assert.equal(bodyweightInput.safeParse(measurement).success, false);
+  }
 });

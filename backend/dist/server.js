@@ -7,9 +7,16 @@ import { z } from "zod";
 import { clearSessionCookie, createSession, currentUserId, deleteCurrentSession, hashPassword, requireUser, verifyPassword, } from "./auth.js";
 import { pool } from "./db.js";
 import { buildMuscleRecovery, } from "./recovery.js";
-import { accountInput, customExerciseInput, customExerciseMusclesInput, loginInput, workoutInput, } from "./validation.js";
+import { accountInput, bodyweightInput, customExerciseInput, customExerciseMusclesInput, loginInput, workoutInput, } from "./validation.js";
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
+function bodyweightResponse(row) {
+    return {
+        ...row,
+        recordedAt: row.recordedAt.toISOString(),
+        leanMassKg: Math.round(row.weightKg * (1 - row.bodyFatPercent / 100) * 100) / 100,
+    };
+}
 const allowedOrigins = process.env.FRONTEND_ORIGIN?.split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
@@ -68,6 +75,111 @@ app.get("/api/auth/me", async (req, res, next) => {
         if (!result.rowCount)
             return res.status(401).json({ error: "Authentication is required." });
         res.json(result.rows[0]);
+    }
+    catch (error) {
+        next(error);
+    }
+});
+app.get("/api/bodyweight", async (req, res, next) => {
+    const userId = await requireUser(req, res);
+    if (!userId)
+        return;
+    try {
+        const result = await pool.query(`select id, recorded_at as "recordedAt",
+        weight_kg::double precision as "weightKg",
+        body_fat_percent::double precision as "bodyFatPercent"
+      from bodyweight_info
+      where user_id = $1 and weight_kg > 0 and body_fat_percent between 0 and 100
+      order by recorded_at desc`, [userId]);
+        res.json(result.rows.map(bodyweightResponse));
+    }
+    catch (error) {
+        next(error);
+    }
+});
+app.post("/api/bodyweight", async (req, res, next) => {
+    const parsed = bodyweightInput.safeParse(req.body);
+    if (!parsed.success)
+        return res.status(400).json({
+            error: "Invalid body composition measurement.",
+            details: parsed.error.flatten(),
+        });
+    const userId = await requireUser(req, res);
+    if (!userId)
+        return;
+    try {
+        const result = await pool.query(`insert into bodyweight_info (user_id, recorded_at, weight_kg, body_fat_percent)
+      values ($1, $2, $3, $4)
+      returning id, recorded_at as "recordedAt",
+        weight_kg::double precision as "weightKg",
+        body_fat_percent::double precision as "bodyFatPercent"`, [
+            userId,
+            parsed.data.recordedAt,
+            parsed.data.weightKg,
+            parsed.data.bodyFatPercent,
+        ]);
+        res.status(201).json(bodyweightResponse(result.rows[0]));
+    }
+    catch (error) {
+        if (typeof error === "object" &&
+            error !== null &&
+            "code" in error &&
+            error.code === "23505") {
+            return res.status(409).json({
+                error: "A measurement already exists at that date and time.",
+            });
+        }
+        next(error);
+    }
+});
+app.put("/api/bodyweight/:measurementId", async (req, res, next) => {
+    const parsed = bodyweightInput.safeParse(req.body);
+    if (!parsed.success)
+        return res.status(400).json({
+            error: "Invalid body composition measurement.",
+            details: parsed.error.flatten(),
+        });
+    const userId = await requireUser(req, res);
+    if (!userId)
+        return;
+    try {
+        const result = await pool.query(`update bodyweight_info
+      set recorded_at = $1, weight_kg = $2, body_fat_percent = $3
+      where id = $4 and user_id = $5
+      returning id, recorded_at as "recordedAt",
+        weight_kg::double precision as "weightKg",
+        body_fat_percent::double precision as "bodyFatPercent"`, [
+            parsed.data.recordedAt,
+            parsed.data.weightKg,
+            parsed.data.bodyFatPercent,
+            req.params.measurementId,
+            userId,
+        ]);
+        if (!result.rowCount)
+            return res.status(404).json({ error: "Measurement not found." });
+        res.json(bodyweightResponse(result.rows[0]));
+    }
+    catch (error) {
+        if (typeof error === "object" &&
+            error !== null &&
+            "code" in error &&
+            error.code === "23505") {
+            return res.status(409).json({
+                error: "A measurement already exists at that date and time.",
+            });
+        }
+        next(error);
+    }
+});
+app.delete("/api/bodyweight/:measurementId", async (req, res, next) => {
+    const userId = await requireUser(req, res);
+    if (!userId)
+        return;
+    try {
+        const result = await pool.query("delete from bodyweight_info where id = $1 and user_id = $2 returning id", [req.params.measurementId, userId]);
+        if (!result.rowCount)
+            return res.status(404).json({ error: "Measurement not found." });
+        res.status(204).end();
     }
     catch (error) {
         next(error);

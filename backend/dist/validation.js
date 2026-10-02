@@ -63,3 +63,8 @@ export const loginInput = z.object({
     email: z.string().email().max(320),
     password: z.string().min(1).max(256),
 });
+export const bodyweightInput = z.object({
+    recordedAt: z.string().datetime(),
+    weightKg: z.number().positive().max(99999.99),
+    bodyFatPercent: z.number().min(0).max(100),
+});

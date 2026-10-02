@@ -1095,3 +1095,144 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+.composition-shell {
+  align-content: start;
+}
+
+.composition-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.composition-entry,
+.composition-history {
+  align-content: start;
+  min-width: 0;
+}
+
+.measurement-form {
+  display: grid;
+  gap: 16px;
+}
+
+.measurement-form label,
+.history-unit-control {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.measurement-weight-input,
+.measurement-percent-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 82px;
+  align-items: center;
+  gap: 8px;
+}
+
+.measurement-percent-input span {
+  color: var(--muted);
+}
+
+.lean-mass-preview {
+  min-height: 24px;
+  color: var(--text);
+  font-weight: 750;
+}
+
+.measurement-form-actions,
+.measurement-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.measurement-history-header,
+.measurement-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.history-unit-control {
+  width: 82px;
+  flex: 0 0 auto;
+}
+
+.measurement-list {
+  display: grid;
+}
+
+.measurement-row {
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.measurement-row:first-child {
+  padding-top: 0;
+}
+
+.measurement-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.measurement-row-details {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.measurement-row-details h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.measurement-row-details p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.measurement-row-actions {
+  flex: 0 0 auto;
+}
+
+.danger-text {
+  color: #ef858b;
+}
+
+.composition-link {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.composition-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 780px) {
+  .composition-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .measurement-history-header,
+  .measurement-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .measurement-row-actions {
+    justify-content: flex-start;
+  }
+}

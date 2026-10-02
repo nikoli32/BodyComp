@@ -469,8 +469,31 @@ async function init() {
   bindEvents();
   resizeCanvas();
   requestRender();
-  await loadRecovery();
+  await Promise.all([loadRecovery(), loadComposition()]);
   window.setInterval(loadRecovery, 60_000);
+}
+
+async function loadComposition() {
+  const bodyFat = document.querySelector("#compositionBodyFat");
+  const weight = document.querySelector("#compositionWeight");
+  const leanMass = document.querySelector("#compositionLeanMass");
+  try {
+    const measurements = await window.MuscleRecoveryApi.getBodyweightMeasurements();
+    const latest = measurements[0];
+    if (!latest) {
+      bodyFat.textContent = "—";
+      weight.textContent = "—";
+      leanMass.textContent = "—";
+      return;
+    }
+    const unit = localStorage.getItem("bodycomp-weight-unit") || "lb";
+    const { weightFromKg } = window.MuscleMapUtils;
+    weight.textContent = `${weightFromKg(latest.weightKg, unit).toFixed(2)} ${unit}`;
+    leanMass.textContent = `${weightFromKg(latest.leanMassKg, unit).toFixed(2)} ${unit}`;
+    bodyFat.textContent = `${Number(latest.bodyFatPercent).toFixed(1)}%`;
+  } catch (error) {
+    console.error("Unable to load body composition measurements.", error);
+  }
 }
 
 function muscle(name, description, regions) {

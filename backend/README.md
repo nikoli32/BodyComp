@@ -21,6 +21,8 @@ This service records workouts and calculates the recovery state for every muscle
 - `GET /api/workouts` returns the signed-in user's workout history.
 - `PUT /api/workouts/:workoutId` edits a workout owned by the signed-in user.
 - `DELETE /api/workouts/:workoutId` deletes a workout owned by the signed-in user.
+- `GET /api/bodyweight` lists the signed-in user's complete body-composition measurements, newest first, with lean mass calculated from weight and body-fat percentage.
+- `POST /api/bodyweight`, `PUT /api/bodyweight/:measurementId`, and `DELETE /api/bodyweight/:measurementId` create, edit, and delete measurements owned by the signed-in user. Weight is supplied and returned in kilograms; lean mass is returned in kilograms.
 - `GET /api/muscles/recovery` returns every map muscle with `status`: `needs_recovery` (red) or `ready` (blue). Per-muscle cold-start estimates are personalized from repeat-exercise performance when at least three repeat intervals are available; this is a training-history proxy, not a direct recovery measurement.
 - `GET /api/muscles/:slug/history` returns the signed-in user's workouts that affected the clicked muscle.
 
