@@ -26,10 +26,12 @@ export const workoutInput = z
                   "A set needs reps or duration.",
                 ),
             )
-            .min(1),
+            .min(1)
+            .max(100),
         }),
       )
-      .min(1),
+      .min(1)
+      .max(50),
   })
   .refine(
     (workout) =>
@@ -38,6 +40,16 @@ export const workoutInput = z
       workout.finishedAt >= workout.startedAt,
     {
       message: "finishedAt must be after startedAt.",
+    },
+  )
+  .refine(
+    (workout) =>
+      workout.exercises.reduce(
+        (total, exercise) => total + exercise.sets.length,
+        0,
+      ) <= 500,
+    {
+      message: "A workout cannot contain more than 500 sets.",
     },
   );
 

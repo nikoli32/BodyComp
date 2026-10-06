@@ -11,7 +11,7 @@ An open-source workout tracker that shows muscle recovery on an interactive body
 
 Record dated body-weight and body-fat measurements from **Settings → Body Composition**. The latest measurement and calculated lean mass appear on the body map; weight can be entered and displayed in pounds or kilograms.
 
-The frontend connects to `http://localhost:3000` by default. To host it separately, define `window.MUSCLE_RECOVERY_API_URL` before loading `api.js` and set `FRONTEND_ORIGIN` in the backend environment.
+When served by the backend, the frontend connects to the same origin by default. To host it separately, define `window.MUSCLE_RECOVERY_API_URL` before loading `api.js` and set `FRONTEND_ORIGIN` in the backend environment. When opened directly from disk, the frontend falls back to `http://localhost:3000`.
 
 Accounts use password hashes and HttpOnly session cookies; workout and recovery data is always scoped to the signed-in account.
 

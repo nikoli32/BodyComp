@@ -71,6 +71,41 @@ test("workout validation rejects exercises without sets", () => {
   );
 });
 
+test("workout validation bounds exercises and sets per exercise", () => {
+  assert.equal(
+    workoutInput.safeParse({
+      ...validWorkout,
+      exercises: Array.from({ length: 51 }, () => validWorkout.exercises[0]),
+    }).success,
+    false,
+  );
+  assert.equal(
+    workoutInput.safeParse({
+      ...validWorkout,
+      exercises: [
+        {
+          exerciseId: 1,
+          sets: Array.from({ length: 101 }, () => ({ reps: 8 })),
+        },
+      ],
+    }).success,
+    false,
+  );
+});
+
+test("workout validation caps the total sets in a request", () => {
+  assert.equal(
+    workoutInput.safeParse({
+      ...validWorkout,
+      exercises: Array.from({ length: 6 }, (_, index) => ({
+        exerciseId: index + 1,
+        sets: Array.from({ length: 100 }, () => ({ reps: 8 })),
+      })),
+    }).success,
+    false,
+  );
+});
+
 test("workout validation rejects an inverted time range", () => {
   assert.equal(
     workoutInput.safeParse({

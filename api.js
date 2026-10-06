@@ -1,7 +1,12 @@
 (() => {
-  const apiBaseUrl = (
-    window.MUSCLE_RECOVERY_API_URL || "http://localhost:3000"
-  ).replace(/\/$/, "");
+  const defaultApiUrl =
+    window.location.protocol === "file:"
+      ? "http://localhost:3000"
+      : window.location.origin;
+  const apiBaseUrl = (window.MUSCLE_RECOVERY_API_URL || defaultApiUrl).replace(
+    /\/$/,
+    "",
+  );
 
   async function request(path, options = {}) {
     const response = await fetch(`${apiBaseUrl}${path}`, {

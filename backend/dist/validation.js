@@ -18,14 +18,19 @@ export const workoutInput = z
             completedAt: z.string().datetime().optional(),
         })
             .refine((set) => set.reps !== undefined || set.durationSeconds !== undefined, "A set needs reps or duration."))
-            .min(1),
+            .min(1)
+            .max(100),
     }))
-        .min(1),
+        .min(1)
+        .max(50),
 })
     .refine((workout) => !workout.finishedAt ||
     !workout.startedAt ||
     workout.finishedAt >= workout.startedAt, {
     message: "finishedAt must be after startedAt.",
+})
+    .refine((workout) => workout.exercises.reduce((total, exercise) => total + exercise.sets.length, 0) <= 500, {
+    message: "A workout cannot contain more than 500 sets.",
 });
 const muscleAssignments = z
     .array(z.object({
